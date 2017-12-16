@@ -199,9 +199,7 @@ void test_sort(int* data, int size, sort_pointer func, Algorithm* Algo, int no)
     free(target);
 }
 
-void test_quicksort(
-    int* data, int size, quicksort_pointer func, Algorithm* Algo, int no)
-{
+void test_quicksort( int* data, int size, quicksort_pointer func, Algorithm* Algo, int no) {
 
     count_ncomp = 0;
     count_assign = 0;
@@ -236,9 +234,7 @@ void test_quicksort(
     free(target);
 }
 
-void test_mergesort(int* data, int size, mergesort_pointer func,
-    char* sort_name, char* complexity)
-{
+void test_mergesort(int* data, int size, mergesort_pointer func, Algorithm* Algo, int no) {
 
     count_ncomp = 0;
     count_assign = 0;
@@ -257,27 +253,49 @@ void test_mergesort(int* data, int size, mergesort_pointer func,
 
     func(target, working_array, size);
 
-    if (is_sorted(target, size)) {
-        printf("Sorted by %s\n", sort_name);
-        printf("Comp count: %d\n", count_ncomp);
-        printf("Assign count: %d\n", count_assign);
+    /*if (is_sorted(target, size)) {*/
+        /*printf("Sorted by %s\n", sort_name);*/
+        /*printf("Comp count: %d\n", count_ncomp);*/
+        /*printf("Assign count: %d\n", count_assign);*/
+    /*} else {*/
+        /*printf("ERROR: Not sorted with %s\n", sort_name);*/
+    /*}*/
+
+    /*end = clock();*/
+
+    /*clocks = (double)(end - begin);*/
+    /*time_spent = clocks / CLOCKS_PER_SEC;*/
+
+    /*printf("clocks total: %f\n", clocks);*/
+    /*printf("time spent (sec): %f\n", time_spent);*/
+
+    /*printf("algorithm complexity: %s\n", complexity);*/
+    /*printf("-------------------\n");*/
+
+    Iteration* Iter = malloc(sizeof(Iteration));
+    Iter->no = no;
+
+    if (is_sorted(target,size)) {
+        end = clock();
+        clocks = (double)(end - begin);
+        time_spent = clocks / CLOCKS_PER_SEC;
+
+        Iter->is_sorted = 1;
+        Iter->comp_count = count_ncomp;
+        Iter->assign_count = count_assign;
+        Iter->clocks_total = clocks;
+        Iter->time_spent = time_spent;
     } else {
-        printf("ERROR: Not sorted with %s\n", sort_name);
-    };
+        Iter->is_sorted = 0;
+    }
 
-    end = clock();
-
-    clocks = (double)(end - begin);
-    time_spent = clocks / CLOCKS_PER_SEC;
-
-    printf("clocks total: %f\n", clocks);
-    printf("time spent (sec): %f\n", time_spent);
-
-    printf("algorithm complexity: %s\n", complexity);
-    printf("-------------------\n");
+    Algo->iterations[no - 1] = Iter;
 
     free(target);
 }
+
+
+
 
 void print_algo(Algorithm* Algo)
 {
@@ -382,23 +400,95 @@ int main(int argc, char* argv[])
     //
     //
     Algorithm* Algo1 = malloc(sizeof(Algorithm));
-
     Algo1->type = "bubble_sort_a";
     Algo1->complexity = "O (n^2)";
 
     Algorithm* Algo2 = malloc(sizeof(Algorithm));
-
     Algo2->type = "bubble_sort_b";
     Algo2->complexity = "O (n^2)";
 
     Algorithm* Algo3 = malloc(sizeof(Algorithm));
+    Algo3->type = "bubble_sort_c";
+    Algo3->complexity = "O (n^2)";
 
-    Algo3->type = "quicksort";
-    Algo3->complexity = "O (nlogn)";
+    Algorithm* Algo4 = malloc(sizeof(Algorithm));
+    Algo4->type = "bubble_sort_d";
+    Algo4->complexity = "O (n^2)";
+
+    Algorithm* Algo5 = malloc(sizeof(Algorithm));
+    Algo5->type = "bubble_sort_e";
+    Algo5->complexity = "O (n^2)";
+
+    Algorithm* Algo6 = malloc(sizeof(Algorithm));
+    Algo6->type = "bubble_sort_f";
+    Algo6->complexity = "O (n^2)";
+
+    Algorithm* Algo7 = malloc(sizeof(Algorithm));
+    Algo7->type = "bubble_sort_b_and_c";
+    Algo7->complexity = "O (n^2)";
+
+    Algorithm* Algo8 = malloc(sizeof(Algorithm));
+    Algo8->type = "bubble_sort_b_and_e";
+    Algo8->complexity = "O (n^2)";
+
+    Algorithm* Algo9 = malloc(sizeof(Algorithm));
+    Algo9->type = "bubble_sort_b_and_f";
+    Algo9->complexity = "O (n^2)";
+
+    Algorithm* Algo10 = malloc(sizeof(Algorithm));
+    Algo10->type = "bubble_sort_c_and_e";
+    Algo10->complexity = "O (n^2)";
+
+    Algorithm* Algo11 = malloc(sizeof(Algorithm));
+    Algo11->type = "bubble_sort_c_and_f";
+    Algo11->complexity = "O (n^2)";
+
+    Algorithm* Algo12 = malloc(sizeof(Algorithm));
+    Algo12->type = "bubble_sort_e_and_f";
+    Algo12->complexity = "O (n^2)";
+
+    Algorithm* Algo13 = malloc(sizeof(Algorithm));
+    Algo13->type = "bubble_sort_b_and_e_and_f";
+    Algo13->complexity = "O (n^2)";
+
+    Algorithm* Algo14 = malloc(sizeof(Algorithm));
+    Algo14->type = "bubble_sort_b_and_c_and_e_and_f";
+    Algo14->complexity = "O (n^2)";
+
+    Algorithm* Algo15 = malloc(sizeof(Algorithm));
+    Algo15->type = "quicksort";
+    Algo15->complexity = "O (n logn n)";
+
+    Algorithm* Algo16 = malloc(sizeof(Algorithm));
+    Algo16->type = "insertion_sort";
+    Algo16->complexity = "O (2n)";
+
+    Algorithm* Algo17 = malloc(sizeof(Algorithm));
+    Algo17->type = "selection_sort";
+    Algo17->complexity = "O (2n)";
+
+    Algorithm* Algo18 = malloc(sizeof(Algorithm));
+    Algo18->type = "top down merge sort";
+    Algo18->complexity = "O (n log n)";
 
     Res->algorithms[0] = Algo1;
     Res->algorithms[1] = Algo2;
     Res->algorithms[2] = Algo3;
+    Res->algorithms[3] = Algo4;
+    Res->algorithms[4] = Algo5;
+    Res->algorithms[5] = Algo6;
+    Res->algorithms[6] = Algo7;
+    Res->algorithms[7] = Algo8;
+    Res->algorithms[8] = Algo9;
+    Res->algorithms[9] = Algo10;
+    Res->algorithms[10] = Algo11;
+    Res->algorithms[11] = Algo12;
+    Res->algorithms[12] = Algo13;
+    Res->algorithms[13] = Algo14;
+    Res->algorithms[14] = Algo15;
+    Res->algorithms[15] = Algo16;
+    Res->algorithms[16] = Algo17;
+    Res->algorithms[17] = Algo18;
 
     memoryStats.memJournal = malloc(10 * sizeof(int));
 
@@ -467,35 +557,22 @@ int main(int argc, char* argv[])
 
         test_sort(data, size, &bubble_sort_a, Algo1, i + 1);
         test_sort(data, size, &bubble_sort_b, Algo2, i + 1);
-        /*test_sort(data, size, &bubble_sort_c, "bubble_sort_c", "O(n^2)");*/
-        /*test_sort(data, size, &bubble_sort_d, "bubble_sort_d", "O(n^2)");*/
-        /*test_sort(data, size, &bubble_sort_e, "bubble_sort_e", "O(n^2)");*/
-        /*test_sort(data, size, &bubble_sort_f, "bubble_sort_f", "O(n^2)");*/
-        /*test_sort(*/
-        /*data, size, &bubble_sort_b_and_c, "bubble_sort_b_and_c", "O(n^2)");*/
-        /*test_sort(*/
-        /*data, size, &bubble_sort_b_and_e, "bubble_sort_b_and_e", "O(n^2)");*/
-        /*test_sort(*/
-        /*data, size, &bubble_sort_b_and_f, "bubble_sort_b_and_f", "O(n^2)");*/
-        /*test_sort(*/
-        /*data, size, &bubble_sort_c_and_e, "bubble_sort_c_and_e", "O(n^2)");*/
-        /*test_sort(*/
-        /*data, size, &bubble_sort_c_and_f, "bubble_sort_c_and_f", "O(n^2)");*/
-        /*test_sort(*/
-        /*data, size, &bubble_sort_e_and_f, "bubble_sort_e_and_f", "O(n^2)");*/
-        /*test_sort(data, size, &bubble_sort_b_and_e_and_f,*/
-        /*"bubble_sort_b_and_c_and_e_and_f", "O(n^2)");*/
-        /*test_sort(data, size, &bubble_sort_b_and_c_and_e_and_f,*/
-        /*"bubble_sort_b_and_c_and_e_and_f", "O(n^2)");*/
-
-        test_quicksort(data, size, &quicksort, Algo3, i + 1);
-
-        /*test_sort(data, size, &insertion_sort, "insertion sort", "O(2n)");*/
-        /*test_sort(data, size, &selection_sort, "selection sort", "O(2n)");*/
-
-        /*test_mergesort(data, size, &TopDownMergeSort, "top down merge
-         * sort",*/
-        /*"O(n log n)");*/
+        test_sort(data, size, &bubble_sort_c, Algo3, i + 1);
+        test_sort(data, size, &bubble_sort_d, Algo4, i + 1);
+        test_sort(data, size, &bubble_sort_e, Algo5, i + 1);
+        test_sort(data, size, &bubble_sort_f, Algo6, i+1);
+        test_sort( data, size, &bubble_sort_b_and_c, Algo7, i+1);
+        test_sort( data, size, &bubble_sort_b_and_e, Algo8, i+1);
+        test_sort( data, size, &bubble_sort_b_and_f, Algo9, i+1);
+        test_sort( data, size, &bubble_sort_c_and_e, Algo10, i+1);
+        test_sort( data, size, &bubble_sort_c_and_f, Algo11, i+1);
+        test_sort( data, size, &bubble_sort_e_and_f, Algo12, i+1);
+        test_sort(data, size, &bubble_sort_b_and_e_and_f, Algo13, i+1);
+        test_sort(data, size, &bubble_sort_b_and_c_and_e_and_f, Algo14, i+1);
+        test_quicksort(data, size, &quicksort, Algo15, i + 1);
+        test_sort(data, size, &insertion_sort, Algo16, i+1);
+        test_sort(data, size, &selection_sort, Algo17, i+1);
+        test_mergesort(data, size, &TopDownMergeSort, Algo18, i+1);
 
         free(data);
     }
@@ -503,8 +580,23 @@ int main(int argc, char* argv[])
     calculate_average(Algo1);
     calculate_average(Algo2);
     calculate_average(Algo3);
+    calculate_average(Algo4);
+    calculate_average(Algo5);
+    calculate_average(Algo6);
+    calculate_average(Algo7);
+    calculate_average(Algo8);
+    calculate_average(Algo9);
+    calculate_average(Algo10);
+    calculate_average(Algo11);
+    calculate_average(Algo12);
+    calculate_average(Algo13);
+    calculate_average(Algo14);
+    calculate_average(Algo15);
+    calculate_average(Algo16);
+    calculate_average(Algo17);
+    calculate_average(Algo18);
 
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 18; i++) {
         print_algo(Res->algorithms[i]);
     }
 
@@ -512,20 +604,34 @@ int main(int argc, char* argv[])
     /*print_algo(Algo2);*/
     /*print_algo(Algo3);*/
 
-    Algorithm** target = malloc(3 * sizeof(Algorithm));
+    Algorithm** target = malloc(18 * sizeof(Algorithm));
 
     target[0] = Algo1;
     target[1] = Algo2;
     target[2] = Algo3;
+    target[3] = Algo4;
+    target[4] = Algo5;
+    target[5] = Algo6;
+    target[6] = Algo7;
+    target[7] = Algo8;
+    target[8] = Algo9;
+    target[9] = Algo10;
+    target[10] = Algo11;
+    target[11] = Algo12;
+    target[12] = Algo13;
+    target[13] = Algo14;
+    target[14] = Algo15;
+    target[15] = Algo16;
+    target[16] = Algo17;
+    target[17] = Algo18;
 
-    target = rank_algorithms(target, 0, 2);
+    target = rank_algorithms(target, 0, 17);
 
     printf("Fastest algorithms (ranking):\n");
     printf("=============================\n");
 
-            for (int i = 0; i < 3; i++)
-    {
-        printf("%d. ", i+1);
+    for (int i = 0; i < 18; i++) {
+        printf("%d. ", i + 1);
         printf("%s\n", target[i]->type);
         printf("Average time: %f\n", target[i]->avg_time);
         printf("---------------------------------\n");
