@@ -1,0 +1,82 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.8	//
+Address	test.c	/^} Address;$/;"	t	typeref:struct:__anon5	file:
+Address	uzduotis_2.c	/^} Address;$/;"	t	typeref:struct:__anon2	file:
+Array	uzduotis_2.c	/^} Array;$/;"	t	typeref:struct:__anon1	file:
+CFLAGS	Makefile	/^CFLAGS=-Wall -xc -g -lm -std=gnu99$/;"	m
+Car	test.c	/^} Car;$/;"	t	typeref:struct:__anon4	file:
+Database	test.c	/^} Database;$/;"	t	typeref:struct:__anon6	file:
+Database	uzduotis_2.c	/^} Database;$/;"	t	typeref:struct:__anon3	file:
+MAX_DATA	test.c	81;"	d	file:
+MAX_DATA	uzduotis_2.c	79;"	d	file:
+MAX_LINE	test.c	84;"	d	file:
+MAX_NUMBER_SIZE	test.c	82;"	d	file:
+MAX_NUMBER_SIZE	uzduotis_2.c	80;"	d	file:
+MAX_ROWS	test.c	83;"	d	file:
+MAX_ROWS	uzduotis_2.c	81;"	d	file:
+MAX_SIZE	test.c	80;"	d	file:
+MAX_SIZE	uzduotis_2.c	78;"	d	file:
+__dbg_h_	dbg.h	2;"	d
+address_print	test.c	/^void address_print(Address *addr) {$/;"	f
+address_print	uzduotis_2.c	/^void address_print(Address *addr) {$/;"	f
+binary_array	uzduotis_2.c	/^    Array *binary_array;$/;"	m	struct:__anon2	file:
+binary_to_decimal	uzduotis_2.c	/^Array *binary_to_decimal(Array *binary_array) {$/;"	f
+car	test.c	/^    Car *car;$/;"	m	struct:__anon5	file:
+check	dbg.h	23;"	d
+check_debug	dbg.h	29;"	d
+check_mem	dbg.h	27;"	d
+choice	test.c	/^bool choice(const char *message) {$/;"	f
+choice	uzduotis_2.c	/^bool choice(const char *message) {$/;"	f
+clean_errno	dbg.h	15;"	d
+cleanup	test.c	/^void cleanup(Address *cur) {$/;"	f
+cleanup	uzduotis_2.c	/^void cleanup(Address *cur) {$/;"	f
+database_clear	test.c	/^void database_clear(Database *db) {$/;"	f
+database_create	test.c	/^Database *database_create() {$/;"	f
+database_create	uzduotis_2.c	/^Database *database_create() {$/;"	f
+database_delete	test.c	/^void database_delete(Database *db, int id) {$/;"	f
+database_delete	uzduotis_2.c	/^void database_delete(Database *db, int id) {$/;"	f
+database_get	test.c	/^void database_get(Database *db, int id) {$/;"	f
+database_get	uzduotis_2.c	/^void database_get(Database *db, int id) {$/;"	f
+database_list	test.c	/^void database_list(Database *db) {$/;"	f
+database_list	uzduotis_2.c	/^void database_list(Database *db) {$/;"	f
+database_set	test.c	/^void database_set(Database *db, int id, Car *car) { \/\/ Array *binary_array, Array *decimal_array) {$/;"	f
+database_set	uzduotis_2.c	/^void database_set(Database *db, int id, Array *binary_array, Array *decimal_array) {$/;"	f
+debug	dbg.h	10;"	d
+debug	dbg.h	12;"	d
+decimal_array	uzduotis_2.c	/^    Array *decimal_array;$/;"	m	struct:__anon2	file:
+die	test.c	/^void die() {$/;"	f
+die	uzduotis_2.c	/^void die() {$/;"	f
+elements	uzduotis_2.c	/^    int *elements;$/;"	m	struct:__anon1	file:
+free_dup	test.c	/^void free_dup(char ***params) {$/;"	f
+free_dup	uzduotis_2.c	/^void free_dup(char ***params) {$/;"	f
+get_array_elements	uzduotis_2.c	/^void get_array_elements(Array *binary_array) {$/;"	f
+get_array_size	uzduotis_2.c	/^int get_array_size() {$/;"	f
+get_car	test.c	/^void get_car(Car *car) {$/;"	f
+get_input	test.c	/^char **get_input() {$/;"	f
+get_input	uzduotis_2.c	/^char **get_input() {$/;"	f
+id	test.c	/^    int id;$/;"	m	struct:__anon5	file:
+id	uzduotis_2.c	/^    int id;$/;"	m	struct:__anon2	file:
+is_binary	uzduotis_2.c	/^bool is_binary(int number) {$/;"	f
+log_err	dbg.h	17;"	d
+log_info	dbg.h	21;"	d
+log_warn	dbg.h	19;"	d
+main	test.c	/^int main(int argc, char *argv[]) {$/;"	f
+main	uzduotis_2.c	/^int main(int argc, char *argv[]) {$/;"	f
+make	test.c	/^    char *make;$/;"	m	struct:__anon4	file:
+model	test.c	/^    char *model;$/;"	m	struct:__anon4	file:
+parameter_valid	test.c	/^bool parameter_valid(int size) {$/;"	f
+parameter_valid	uzduotis_2.c	/^bool parameter_valid(int size) {$/;"	f
+price	test.c	/^    int price;$/;"	m	struct:__anon4	file:
+random_binary	uzduotis_2.c	/^void random_binary(Array *binary_array) {$/;"	f
+rows	test.c	/^    Address rows[MAX_ROWS];$/;"	m	struct:__anon6	file:
+rows	uzduotis_2.c	/^    Address rows[MAX_ROWS];$/;"	m	struct:__anon3	file:
+sentinel	dbg.h	25;"	d
+set	test.c	/^    int set;$/;"	m	struct:__anon5	file:
+set	uzduotis_2.c	/^    int set;$/;"	m	struct:__anon2	file:
+size	uzduotis_2.c	/^    int size;$/;"	m	struct:__anon1	file:
+unique_errors	uzduotis_2.c	/^void unique_errors(int *errors, int size) {$/;"	f
+year	test.c	/^    int year;$/;"	m	struct:__anon4	file:
