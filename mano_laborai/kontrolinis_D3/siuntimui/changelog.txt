@@ -1,0 +1,73 @@
+# Line numbers are from the updated files (after the changes were made)
+
+###########
+FILE: mod.h
+###########
+
+Style fixes:
+
+(1) changed indentation to 4 spaces for increased readability
+(2) moved asterisk (*) signs towards variable name, not its type
+
+
+[lines] [change]
+
+4-8 	wrap struct into typedef
+
+6		change 'size' to 'max', meaning last index in dynamic array (data[max])
+
+13  	change 'pop' function docstring
+
+16-27 	add new functions: get element count, create stack, get nth element, memory error.
+
+1,2,29 - wrap mod.h inside #ifndef
+
+
+
+###########
+FILE: mod.c
+###########
+
+Style fixes:
+
+(1) empty line between #define and #include statements
+(2) empty line between common library imports and "mod.h"
+(3) changed indentation to 4 spaces for increased readability
+(4) moved asterisk (*) signs towards variable name, not its type
+
+
+[lines] [change]
+
+8-12 add comment about updated version (v3)
+
+27   	remove if clause about invalid stack size, since the array is
+			changed to dynamic 
+
+28  	increment max index at first
+
+31  	allocate/reallocate memory for array of void pointers
+
+33-35 	memory allocation validation
+
+37 		add commment about memory allocation
+
+38  	'size' changed to 'max'
+
+39-41	 memory allocation validation
+
+43	    'size' changed to 'max', removed incrementing (++), moved it to the beginning 
+			of the function (line 28)
+
+52 		'size' to 'max', added '=', since 'max' now shows the last index, not the element count of
+			an array
+
+56		move decrementing to the end of the variable (I might be mistaken, but otherwise memory leak appears)
+
+64-71	add function for creating a stack.
+
+74-78   add funciton for getting element count in the stack
+
+81-92	add function for getting nth element from the stack 
+
+95-104  add function for catching memory errors and exiting the program
+

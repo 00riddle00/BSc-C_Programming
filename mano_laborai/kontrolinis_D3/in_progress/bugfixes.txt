@@ -1,0 +1,12 @@
+###########
+FILE: mod.c
+###########
+
+[line no]    [bugfix]
+
+16 changed MAX_DATA - 1 to MAX_DATA (otherwise max elements is 29, not 30)
+
+24 implicit declaration of function ‘malloc’   FIX: add '#include <stdlib.h>' (line 11)
+
+25 implicit declaration of function ‘memcpy’  FIX: add '#include <string.h>' (line 12)
+
