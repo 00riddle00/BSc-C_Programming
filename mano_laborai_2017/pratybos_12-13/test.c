@@ -77,7 +77,7 @@ void getsize(int* size);
 int is_sorted(int* data, int size);
 void getmemory(int** data, char* ptrName, int size);
 void freememory(int** data, char* ptrName);
-void filldata(int* data, int size);
+void filldata(int* data, int size, int min, int max, int repeat);
 void print(int* data, int size);
 void die();
 
@@ -106,6 +106,7 @@ typedef struct {
     char* type;
     char* complexity;
     int iter_count;
+    int rank;
     int avg_comp;
     int avg_assign;
     double avg_clocks;
@@ -119,7 +120,6 @@ typedef struct {
     char* compiler;
     Algorithm* algorithms[MAX_ALGO];
 } Results;
-
 
 MemoryStats memoryStats;
 
@@ -163,16 +163,13 @@ void swap_three(int* a, int* b, int* c)
     *c = temp;
 }
 
-
-void test_sort(
-    int* data, int size, sort_pointer func, Algorithm* Algo, int no)
+void test_sort(int* data, int size, sort_pointer func, Algorithm* Algo, int no)
 {
 
     count_ncomp = 0;
     count_assign = 0;
 
     begin = clock();
-
 
     int* target = malloc(size * sizeof(int));
     if (!target)
@@ -282,8 +279,8 @@ void test_mergesort(int* data, int size, mergesort_pointer func,
     free(target);
 }
 
-
-void print_algo(Algorithm* Algo) {
+void print_algo(Algorithm* Algo)
+{
 
     printf("Algorithm type: %s\n", Algo->type);
     printf("Time complexity: %s\n", Algo->complexity);
@@ -300,7 +297,7 @@ void print_algo(Algorithm* Algo) {
             printf("time spent: %f\n", Algo->iterations[i]->time_spent);
         }
         printf("----------------------------------\n");
-   }
+    }
     printf("Iteration count: %d\n", Algo->iter_count);
     printf("Average compare count: %d\n", Algo->avg_comp);
     printf("Average assign count: %d\n", Algo->avg_assign);
@@ -310,13 +307,13 @@ void print_algo(Algorithm* Algo) {
     printf("===================================\n");
 }
 
-void calculate_average(Algorithm* Algo) {
+void calculate_average(Algorithm* Algo)
+{
     int sum_comp = 0;
     int sum_assign = 0;
     double sum_clocks = 0;
     double sum_time = 0;
     int sorted_count = array_count;
-
 
     for (int i = 0; i < array_count; i++) {
         if (!Algo->iterations[i]->is_sorted) {
@@ -331,12 +328,46 @@ void calculate_average(Algorithm* Algo) {
 
     Algo->avg_comp = sum_comp / sorted_count;
     Algo->avg_assign = sum_assign / sorted_count;
-    Algo->avg_clocks = (double) (sum_clocks / sorted_count);
-    Algo->avg_time = (double) (sum_time / sorted_count);
+    Algo->avg_clocks = (double)(sum_clocks / sorted_count);
+    Algo->avg_time = (double)(sum_time / sorted_count);
     Algo->iter_count = sorted_count;
 }
 
-    
+Algorithm** rank_algorithms(Algorithm** target, int first, int last)
+{
+
+    Algorithm* temp;
+    int pivot, j, i;
+
+    if (first < last) {
+        pivot = first;
+        i = first;
+        j = last;
+
+        while (i < j) {
+            while (
+                target[i]->avg_time <= target[pivot]->avg_time && i < last) {
+                i++;
+            }
+            while (target[j]->avg_time > target[pivot]->avg_time) {
+                j--;
+            }
+            if (i < j) {
+                temp = target[i];
+                target[i] = target[j];
+                target[j] = temp;
+            }
+        }
+
+        temp = target[pivot];
+        target[pivot] = target[j];
+        target[j] = temp;
+
+        rank_algorithms(target, first, j - 1);
+        rank_algorithms(target, j + 1, last);
+    }
+    return target;
+}
 
 int main(int argc, char* argv[])
 {
@@ -355,12 +386,10 @@ int main(int argc, char* argv[])
     Algo1->type = "bubble_sort_a";
     Algo1->complexity = "O (n^2)";
 
-
     Algorithm* Algo2 = malloc(sizeof(Algorithm));
 
     Algo2->type = "bubble_sort_b";
     Algo2->complexity = "O (n^2)";
-
 
     Algorithm* Algo3 = malloc(sizeof(Algorithm));
 
@@ -380,6 +409,9 @@ int main(int argc, char* argv[])
     printf("Mem used total: %d\n", memoryStats.memUsed);
 
     int size;
+    int min;
+    int max;
+    int repeat;
 
     printf("How many arrays would you like to test?");
     if (scanf("%d", &array_count) == 1) {
@@ -391,6 +423,33 @@ int main(int argc, char* argv[])
         printf("Scan successful");
     }
 
+    printf("What is the minimum number in each array?");
+    if (scanf("%d", &min) == 1) {
+        printf("Scan successful");
+    }
+
+    printf("What is the maximum number in each array?");
+    if (scanf("%d", &max) == 1) {
+        printf("Scan successful");
+    }
+
+    while (1) {
+        printf("How many repeating values there will be AT LEAST?");
+        if (scanf("%d", &repeat) == 1 && repeat >= 0
+            && repeat <= (max - min + 1)) {
+            printf("Scan successful");
+            break;
+        } else {
+            printf("Please enter a non negative integer, not greater than the "
+                   "size of the array");
+        }
+    }
+
+    printf("How many repeating values there will be AT LEAST?");
+    if (scanf("%d", &repeat) == 1) {
+        printf("Scan successful");
+    }
+
     for (int i = 0; i < array_count; i++) {
 
         int* data = NULL;
@@ -399,15 +458,15 @@ int main(int argc, char* argv[])
         if (data == NULL)
             die("Atminties problema");
 
-        filldata(data, size);
+        filldata(data, size, min, max, repeat);
         if (data == NULL)
             die("Atminties problema");
 
         print(data, size);
         //---------------------------USING FUNCTION POINTERS-----------------//
 
-        test_sort(data, size, &bubble_sort_a, Algo1, i+1);
-        test_sort(data, size, &bubble_sort_b,  Algo2, i+1);
+        test_sort(data, size, &bubble_sort_a, Algo1, i + 1);
+        test_sort(data, size, &bubble_sort_b, Algo2, i + 1);
         /*test_sort(data, size, &bubble_sort_c, "bubble_sort_c", "O(n^2)");*/
         /*test_sort(data, size, &bubble_sort_d, "bubble_sort_d", "O(n^2)");*/
         /*test_sort(data, size, &bubble_sort_e, "bubble_sort_e", "O(n^2)");*/
@@ -429,7 +488,7 @@ int main(int argc, char* argv[])
         /*test_sort(data, size, &bubble_sort_b_and_c_and_e_and_f,*/
         /*"bubble_sort_b_and_c_and_e_and_f", "O(n^2)");*/
 
-        test_quicksort(data, size, &quicksort, Algo3, i+1);
+        test_quicksort(data, size, &quicksort, Algo3, i + 1);
 
         /*test_sort(data, size, &insertion_sort, "insertion sort", "O(2n)");*/
         /*test_sort(data, size, &selection_sort, "selection sort", "O(2n)");*/
@@ -437,7 +496,6 @@ int main(int argc, char* argv[])
         /*test_mergesort(data, size, &TopDownMergeSort, "top down merge
          * sort",*/
         /*"O(n log n)");*/
-
 
         free(data);
     }
@@ -453,6 +511,25 @@ int main(int argc, char* argv[])
     /*print_algo(Algo1);*/
     /*print_algo(Algo2);*/
     /*print_algo(Algo3);*/
+
+    Algorithm** target = malloc(3 * sizeof(Algorithm));
+
+    target[0] = Algo1;
+    target[1] = Algo2;
+    target[2] = Algo3;
+
+    target = rank_algorithms(target, 0, 2);
+
+    printf("Fastest algorithms (ranking):\n");
+    printf("=============================\n");
+
+            for (int i = 0; i < 3; i++)
+    {
+        printf("%d. ", i+1);
+        printf("%s\n", target[i]->type);
+        printf("Average time: %f\n", target[i]->avg_time);
+        printf("---------------------------------\n");
+    }
 
     printf("Mem used total: %d\n", memoryStats.memUsed);
     free(memoryStats.memJournal);
@@ -1102,15 +1179,43 @@ void freememory(int** data, char* ptrName)
     free(*data);
 }
 
-void filldata(int* data, int size)
+void filldata(int* data, int size, int min, int max, int repeat)
 {
-    /*time_t now;*/
-    /*time(&now);*/
-    /*srand((unsigned int)now);*/
     int i;
 
     for (i = 0; i < size; i++) {
-        data[i] = rand() % 100 + 1;
+        data[i] = min + rand() % (max - min + 1);
+    }
+
+    if (repeat > 1) {
+        int repeat_value = min + rand() % (max - min + 1);
+
+        int indexes[repeat];
+
+        int x;
+
+        // Non-duplicate number generation
+        debug("%d", repeat);
+
+        i = 0;
+        while (i < repeat) {
+            int index = rand() % size;
+            debug("%d", index);
+
+            for (x = 0; x < i; x++) {
+                if (indexes[x] == index) {
+                    break;
+                }
+            }
+            if (x == i) {
+                indexes[i++] = index;
+            }
+        }
+
+        for (i = 0; i < repeat; i++) {
+            debug("%d", indexes[i]);
+            data[indexes[i]] = repeat_value;
+        }
     }
 }
 
