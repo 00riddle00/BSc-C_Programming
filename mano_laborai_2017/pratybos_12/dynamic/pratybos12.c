@@ -72,27 +72,7 @@
 #include <time.h>
 
 #include "dbg.h"
-#include "helpers.h"
-#include "test_algorithm.h"
-
-#include "bubble_sort_a.h"
-#include "bubble_sort_b.h"
-#include "bubble_sort_c.h"
-#include "bubble_sort_d.h"
-#include "bubble_sort_e.h"
-#include "bubble_sort_f.h"
-#include "bubble_sort_b_and_c.h"
-#include "bubble_sort_b_and_e.h"
-#include "bubble_sort_b_and_f.h"
-#include "bubble_sort_c_and_e.h"
-#include "bubble_sort_c_and_f.h"
-#include "bubble_sort_e_and_f.h"
-#include "bubble_sort_b_and_e_and_f.h"
-#include "bubble_sort_b_and_c_and_e_and_f.h"
-#include "quicksort.h"
-#include "insertion_sort.h"
-#include "selection_sort.h"
-#include "top_down_merge_sort.h"
+#include "lib_riddle.h"
 
 #define MAX_ITER 100
 #define MAX_ALGO 100
