@@ -1,6 +1,6 @@
 /*=============================================================================
  |
- |  Assignment:  Program 12-13
+ |  Assignment:  Program 12
  |
  |       Author:  Tomas Giedraitis
  |  Study group:  VU MIF INFO, 1st group
