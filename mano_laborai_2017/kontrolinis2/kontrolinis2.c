@@ -17,12 +17,13 @@
   |
   |  Description:  The program which gets the input number, which indicates how
   |                many words there will be, then prompts the user to enter
-  |                those words, and then displays a histogram in descending 
-  |                order by times the word is repeated. The words with the 
+  |                those words, and then displays a histogram in descending
+  |                order by times the word is repeated. The words with the
   |                same duplicate count are sorted in lexicographical order
   |
   +===========================================================================*/
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -72,8 +73,6 @@ Freq** quicksort_freqs(Freq** target, int first, int last);
 // ::params: size - size of the array
 void print_reverse(Freq** target, int size);
 
-
-
 int main(int argc, char* argv[])
 {
 
@@ -81,12 +80,31 @@ int main(int argc, char* argv[])
     int size = get_pos_num("Please enter a number of words > ", 0);
 
     Histogram* histogram = malloc(sizeof(Histogram));
+    if (histogram == NULL) {
+        fprintf(stderr, "ERROR: failed to allocate memory\n");
+        exit(-1);
+    }
+
     histogram->freqs = malloc(size * sizeof(Freq*));
+    if (histogram->freqs == NULL) {
+        fprintf(stderr, "ERROR: failed to allocate memory\n");
+        exit(-1);
+    }
+
     histogram->size = 0;
 
     char** words = (char**)malloc(size * sizeof(char*));
+    if (words == NULL) {
+        fprintf(stderr, "ERROR: failed to allocate memory\n");
+        exit(-1);
+    }
+
     for (int i = 0; i < size; i++) {
         words[i] = (char*)malloc(MAX_STRING * sizeof(char));
+        if (words[i] == NULL) {
+            fprintf(stderr, "ERROR: failed to allocate memory\n");
+            exit(-1);
+        }
     }
 
     // get words from the user
@@ -100,17 +118,26 @@ int main(int argc, char* argv[])
 
     // initialize the array of duplicates
     char** duplicated = (char**)malloc(size * sizeof(char*));
-    for (int i = 0; i < size; i++) {
-        duplicated[i] = (char*)calloc(MAX_STRING+1, sizeof(char));
+    if (duplicated == NULL) {
+        fprintf(stderr, "ERROR: failed to allocate memory\n");
+        exit(-1);
     }
 
-    // count the duplicates of each word and add the word with its duplicate count
-    // to the frequency array, and then - to the histogram struct. Each word is
-    // writtern once, without duplication.
-    for (int i = 0; i < size; i++) { 
+    for (int i = 0; i < size; i++) {
+        duplicated[i] = (char*)calloc(MAX_STRING + 1, sizeof(char));
+        if (duplicated[i] == NULL) {
+            fprintf(stderr, "ERROR: failed to allocate memory\n");
+            exit(-1);
+        }
+    }
+
+    // count the duplicates of each word and add the word with its duplicate
+    // count to the frequency array, and then - to the histogram struct. Each
+    // word is writtern once, without duplication.
+    for (int i = 0; i < size; i++) {
         is_duplicate = 0;
 
-        // if the word is already added to the duplicate list, 
+        // if the word is already added to the duplicate list,
         // it means that its duplicates are already counted,
         // so the loop iteration is skipped
         for (int k = 0; k < size; k++) {
@@ -128,8 +155,17 @@ int main(int argc, char* argv[])
         // whether it has any duplicates.
         duplicates = 1;
         Freq* freq = malloc(sizeof(Freq));
+        if (freq == NULL) {
+            fprintf(stderr, "ERROR: failed to allocate memory\n");
+            exit(-1);
+        }
+
         freq->word = (char*)malloc(MAX_STRING * sizeof(char));
-        strcpy(freq->word,words[i]);
+        if (freq->word == NULL) {
+            fprintf(stderr, "ERROR: failed to allocate memory\n");
+            exit(-1);
+        }
+        strcpy(freq->word, words[i]);
         // searching for the duplicates
         for (int j = i + 1; j < size; j++) {
             if (strcmp(words[i], words[j]) == 0) {
@@ -183,7 +219,6 @@ int main(int argc, char* argv[])
     printf("\nLexicographically sorted frequency table:\n");
     print_reverse(histogram->freqs, hist_size);
 
-
     // freeing the memory
     for (int i = 0; i < size; i++) {
         free(duplicated[i]);
@@ -205,12 +240,18 @@ int main(int argc, char* argv[])
     free(histogram->freqs);
     free(histogram);
 
-
     return 0;
 }
 
 Freq** quicksort_freqs(Freq** target, int first, int last)
 {
+    assert(target != NULL && "target cannot be NULL");
+
+    if (first < 0 || last < 0) {
+        fprintf(stderr, "ERROR: wrong parameters to '%s'\n", __func__);
+        exit(-1);
+    }
+
     Freq* temp;
     int pivot, j, i;
 
@@ -242,8 +283,15 @@ Freq** quicksort_freqs(Freq** target, int first, int last)
     return target;
 }
 
-Freq** sort_rlexicographical(Freq** target, int first, int last) 
+Freq** sort_rlexicographical(Freq** target, int first, int last)
 {
+    assert(target != NULL && "target cannot be NULL");
+
+    if (first < 0 || last <= 0) {
+        fprintf(stderr, "ERROR: wrong parameters to '%s'\n", __func__);
+        exit(-1);
+    }
+
     int i, j;
     Freq* temp;
 
@@ -267,11 +315,18 @@ Freq** sort_rlexicographical(Freq** target, int first, int last)
     return target;
 }
 
-void print_reverse(Freq** target, int size) {
+void print_reverse(Freq** target, int size)
+{
+
+    assert(target != NULL && "target cannot be NULL");
+
+    if (size <= 0) {
+        fprintf(stderr, "ERROR: wrong size parameters to '%s'\n", __func__);
+        exit(-1);
+    }
+
     for (int i = size - 1; i >= 0; i--) {
         printf("%s ", target[i]->word);
         printf("%d \n", target[i]->times);
     }
 }
-
-
