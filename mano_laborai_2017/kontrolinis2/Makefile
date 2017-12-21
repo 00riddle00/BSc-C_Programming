@@ -1,8 +1,9 @@
 CC=gcc
-CFLAGS=-Wall -Wextra -xc -g -std=gnu99
+CFLAGS=-DNDEBUG -fPIC -Wall -g -std=gnu11 #-Wextra -Wconversion -pedantic
+#CFLAGS=-fPIC -Wall -g -std=gnu11 #-Wextra -Wconversion -pedantic
 
 kontrolinis2: lib_riddle.a
-	$(CC) -o kontrolinis2 kontrolinis2.c -L. lib_riddle.a
+	$(CC) $(CFLAGS) -o kontrolinis2 kontrolinis2.c -L. lib_riddle.a
 
 clean:
 	rm kontrolinis2
