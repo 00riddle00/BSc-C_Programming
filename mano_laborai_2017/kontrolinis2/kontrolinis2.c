@@ -30,6 +30,8 @@
 #include "dbg.h"
 #include "lib_riddle.h"
 
+#define MAX_STRING 50
+
 // Frequency structure. Contains the word and the times
 // it is repeated
 typedef struct Freq {
@@ -52,7 +54,7 @@ typedef struct Histogram {
 // ::params: last - last index of the portion of the array
 // ::return: Array of frequency structs (portion of which is
 // sorted in lexicographically reverse order)
-Freq** sort_lexicographical(Freq** target, int first, int last);
+Freq** sort_rlexicographical(Freq** target, int first, int last);
 
 // sort the frequency structs array by their Freq->times
 // attribute, using quicksort
@@ -70,59 +72,71 @@ Freq** quicksort_freqs(Freq** target, int first, int last);
 // ::params: size - size of the array
 void print_reverse(Freq** target, int size);
 
+
+
 int main(int argc, char* argv[])
 {
 
-    int stringsize = 10;
-
+    // get number from the user
     int size = get_pos_num("Please enter a number of words > ", 0);
 
-    /*Freq** histogram = malloc(size * sizeof(Freq));*/
     Histogram* histogram = malloc(sizeof(Histogram));
-    histogram->size = 0;
     histogram->freqs = malloc(size * sizeof(Freq*));
+    histogram->size = 0;
 
-    char** words = malloc(size * sizeof(char*));
-
+    char** words = (char**)malloc(size * sizeof(char*));
     for (int i = 0; i < size; i++) {
-        words[i] = (char*)malloc(stringsize + 1);
+        words[i] = (char*)malloc(MAX_STRING * sizeof(char));
     }
 
+    // get words from the user
     for (int i = 0; i < size; i++) {
-        words[i] = get_word("enter > ", words[i]);
+        words[i] = get_word("Enter word > ", words[i]);
     }
 
     int duplicates;
-
-    char** duplicated = malloc(sizeof(char*));
-    for (int i = 0; i < size; i++) {
-        duplicated[i] = (char*)malloc(stringsize + 1);
-        duplicated[i] = "000";
-    }
-
     int is_duplicate;
     int hist_size = 0;
 
-    for (int i = 0; i < size; i++) { // read comment by @nbro
+    // initialize the array of duplicates
+    char** duplicated = (char**)malloc(size * sizeof(char*));
+    for (int i = 0; i < size; i++) {
+        duplicated[i] = (char*)calloc(MAX_STRING+1, sizeof(char));
+    }
+
+    // count the duplicates of each word and add the word with its duplicate count
+    // to the frequency array, and then - to the histogram struct. Each word is
+    // writtern once, without duplication.
+    for (int i = 0; i < size; i++) { 
         is_duplicate = 0;
 
-        for (int s = 0; s < size; s++) {
-            if (strcmp(duplicated[s], words[i]) == 0) {
+        // if the word is already added to the duplicate list, 
+        // it means that its duplicates are already counted,
+        // so the loop iteration is skipped
+        for (int k = 0; k < size; k++) {
+            if (strcmp(duplicated[k], words[i]) == 0) {
                 is_duplicate = 1;
             }
         }
 
+        // skipping the loop iteration
         if (is_duplicate) {
             continue;
         }
 
+        // found the word about which we are not yet sure
+        // whether it has any duplicates.
         duplicates = 1;
         Freq* freq = malloc(sizeof(Freq));
-        freq->word = words[i];
+        freq->word = (char*)malloc(MAX_STRING * sizeof(char));
+        strcpy(freq->word,words[i]);
+        // searching for the duplicates
         for (int j = i + 1; j < size; j++) {
             if (strcmp(words[i], words[j]) == 0) {
-                // do whatever you do in case of a duplicate
-                duplicated[i] = words[i];
+                // in case of a duplicate
+                // put word in duplicates array
+                // and increase its duplicates count
+                strcpy(duplicated[i], words[i]);
                 duplicates++;
             }
         }
@@ -147,28 +161,50 @@ int main(int argc, char* argv[])
 
     int max_count = histogram->freqs[hist_size - 1]->times;
     int index = hist_size - 1;
-
     int index_max;
-    int index_min;
 
-    for (int i = max_count; i > 0; i--) {
+    // partition the frequency array by the same duplicate times, and
+    // pass the partitioned array to reverse lexicographical sort
+    // on the go.
+    for (int i = max_count; i > 0 && index >= 0; i--) {
         index_max = index;
-        index_min = index;
         if (histogram->freqs[index]->times == i) {
             while (index - 1 >= 0 && histogram->freqs[index - 1]->times == i) {
                 index--;
-                index_min--;
             }
-            if (index_min != index_max) {
-                histogram->freqs = sort_lexicographical(
-                    histogram->freqs, index_min, index_max);
+            if (index != index_max) {
+                histogram->freqs = sort_rlexicographical(
+                    histogram->freqs, index, index_max);
             }
-            index = index_min - 1;
+            index--;
         }
     }
 
     printf("\nLexicographically sorted frequency table:\n");
     print_reverse(histogram->freqs, hist_size);
+
+
+    // freeing the memory
+    for (int i = 0; i < size; i++) {
+        free(duplicated[i]);
+    }
+    free(duplicated);
+
+    for (int i = 0; i < size; i++) {
+        free(words[i]);
+    }
+    free(words);
+
+    for (int i = 0; i < hist_size; i++) {
+        free(histogram->freqs[i]->word);
+    }
+
+    for (int i = 0; i < hist_size; i++) {
+        free(histogram->freqs[i]);
+    }
+    free(histogram->freqs);
+    free(histogram);
+
 
     return 0;
 }
@@ -206,7 +242,7 @@ Freq** quicksort_freqs(Freq** target, int first, int last)
     return target;
 }
 
-Freq** sort_lexicographical(Freq** target, int first, int last) 
+Freq** sort_rlexicographical(Freq** target, int first, int last) 
 {
     int i, j;
     Freq* temp;
