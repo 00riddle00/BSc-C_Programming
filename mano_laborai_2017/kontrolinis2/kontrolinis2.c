@@ -108,6 +108,7 @@ int main(int argc, char* argv[])
     }
 
     // get words from the user
+    // TODO avoid buffer overflows (string typed is greated than MAX_STRING)
     for (int i = 0; i < size; i++) {
         words[i] = get_word("Enter word > ", words[i]);
     }
@@ -188,6 +189,10 @@ int main(int argc, char* argv[])
     debug("-----------------------");
 
     histogram->freqs = quicksort_freqs(histogram->freqs, 0, hist_size - 1);
+    if (histogram->freqs == NULL) {
+        fprintf(stderr, "ERROR: returned NULL pointer\n");
+        exit(-1);
+    }
 
     debug("Sorted frequency table:");
     for (int i = hist_size - 1; i >= 0; i--) {
@@ -209,8 +214,11 @@ int main(int argc, char* argv[])
                 index--;
             }
             if (index != index_max) {
-                histogram->freqs = sort_rlexicographical(
-                    histogram->freqs, index, index_max);
+                histogram->freqs = sort_rlexicographical( histogram->freqs, index, index_max);
+                if (histogram->freqs == NULL) {
+                    fprintf(stderr, "ERROR: returned NULL pointer\n");
+                    exit(-1);
+                }
             }
             index--;
         }
