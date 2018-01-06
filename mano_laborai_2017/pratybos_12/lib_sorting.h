@@ -1,5 +1,5 @@
-#ifndef _LIB_RIDDLE_
-#define _LIB_RIDDLE_
+#ifndef _LIB_SORTING_
+#define _LIB_SORTING_
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,31 +17,8 @@ extern clock_t end;
 extern double clocks;
 extern double time_spent;
 
-
-// input processing functions
-char* get_word(char* message, char* output);
-char* get_text(char* message, char* output);
-int get_num(char* message);
-int get_pos_num(char* message, int zero_allowed);
-int get_num_interval(char* message, char* err_msg, int min, int max);
-char** get_tokens(
-    char* message, int max_tokens, int line_length, char** tokens);
-int choice(const char* message);
-
-// function working with arrays
-void fill_array(int* data, int size, int max);
-void print_array(int* data, int size, char* message);
-
-// sorting helper functions
 void swap(int* a, int* b);
 void swap_three(int* a, int* b, int* c);
-int is_sorted(int* data, int size);
-
-// memory functions
-void getmemory(int** data, char* ptrName, int memory_size);
-void freememory(int** data, char* ptrName);
-void die(char* message);
-
 
 int* bubble_sort_a(int* data, int size);
 int* bubble_sort_b(int* data, int size);
@@ -57,9 +34,11 @@ int* bubble_sort_c_and_e(int* target, int size);
 int* bubble_sort_c_and_f(int* target, int size);
 int* bubble_sort_b_and_e_and_f(int* target, int size);
 int* bubble_sort_b_and_c_and_e_and_f(int* target, int size);
+int* quicksort(int* target, int start, int end);
+int* QuickSortMedian(int* a, int start, int end);
+int* QuickSortRandomAndMedian(int* a, int start, int end);
 
 int* insertion_sort(int* target, int size);
-int* quicksort(int* target, int first, int last);
 int* selection_sort(int* target, int size);
 
 // Array A[] has the items to sort; array B[] is a work array.

@@ -10,7 +10,7 @@
  |
  |     Language:  GNU C (using gcc on Lenovo Y50-70, OS: Arch Linux x86_64)
  |     Version:   0.0
- |   To Compile:  gcc -Wall -xc -g -std=c99 pratybos12.c -o pratybos12
+ |   To Compile:  gcc -Wall -g -std=c11 pratybos12.c -o pratybos12
  |
  +-----------------------------------------------------------------------------
  |
@@ -72,9 +72,11 @@
 #include <time.h>
 
 #include "dbg.h"
-#include "lib_riddle.h"
 
-#define MAX_ITER 100
+#include "lib_riddle.h"
+#include "lib_sorting.h"
+
+#define MAX_ITER 10000
 #define MAX_ALGO 100
 
 
@@ -125,6 +127,7 @@ typedef int* (*sort_pointer)(int* target, int size);
 
 // function pointer to a quicksort function
 typedef int* (*quicksort_pointer)(int* target, int first, int last);
+typedef void (*quicksort_pointer_2)(int* target, int first, int last);
 
 // function pointer to a mergesort function
 typedef void (*mergesort_pointer)(int* target, int* working_array, int size);
@@ -210,20 +213,28 @@ int main(int argc, char* argv[])
     Algo14->complexity = "O (n^2)";
 
     Algorithm* Algo15 = malloc(sizeof(Algorithm));
-    Algo15->type = "quicksort";
+    Algo15->type = "quicksort_pivot_first";
     Algo15->complexity = "O (n logn n)";
 
     Algorithm* Algo16 = malloc(sizeof(Algorithm));
-    Algo16->type = "insertion_sort";
-    Algo16->complexity = "O (2n)";
+    Algo16->type = "quicksort_median";
+    Algo16->complexity = "O (n logn n)";
 
     Algorithm* Algo17 = malloc(sizeof(Algorithm));
-    Algo17->type = "selection_sort";
-    Algo17->complexity = "O (2n)";
+    Algo17->type = "quicksort_random_and_median";
+    Algo17->complexity = "O (n logn n)";
 
     Algorithm* Algo18 = malloc(sizeof(Algorithm));
-    Algo18->type = "top down merge sort";
-    Algo18->complexity = "O (n log n)";
+    Algo18->type = "insertion_sort";
+    Algo18->complexity = "O (2n)";
+
+    Algorithm* Algo19 = malloc(sizeof(Algorithm));
+    Algo19->type = "selection_sort";
+    Algo19->complexity = "O (2n)";
+
+    Algorithm* Algo20 = malloc(sizeof(Algorithm));
+    Algo20->type = "top down merge sort";
+    Algo20->complexity = "O (n log n)";
 
     Res->algorithms[0] = Algo1;
     Res->algorithms[1] = Algo2;
@@ -243,6 +254,8 @@ int main(int argc, char* argv[])
     Res->algorithms[15] = Algo16;
     Res->algorithms[16] = Algo17;
     Res->algorithms[17] = Algo18;
+    Res->algorithms[18] = Algo19;
+    Res->algorithms[19] = Algo20;
 
     memoryStats.memJournal = malloc(10 * sizeof(int));
 
@@ -277,20 +290,13 @@ int main(int argc, char* argv[])
     }
 
     for (int i = 0; i < array_count; i++) {
-
-        int* data = NULL;
-
-        getmemory(&data, "data", size * sizeof(int));
-        if (data == NULL)
-            die("Atminties problema");
+        int* data = malloc(size * sizeof(int));
 
         filldata(data, size, min, max, repeat);
         if (data == NULL)
             die("Atminties problema");
 
-        print_array(data, size, "Your generated numbers:");
         //---------------------------USING FUNCTION POINTERS-----------------//
-
         test_sort(data, size, &bubble_sort_a, Algo1, i + 1);
         test_sort(data, size, &bubble_sort_b, Algo2, i + 1);
         test_sort(data, size, &bubble_sort_c, Algo3, i + 1);
@@ -306,11 +312,14 @@ int main(int argc, char* argv[])
         test_sort(data, size, &bubble_sort_b_and_e_and_f, Algo13, i + 1);
         test_sort(data, size, &bubble_sort_b_and_c_and_e_and_f, Algo14, i + 1);
         test_quicksort(data, size, &quicksort, Algo15, i + 1);
-        test_sort(data, size, &insertion_sort, Algo16, i + 1);
-        test_sort(data, size, &selection_sort, Algo17, i + 1);
-        test_mergesort(data, size, &TopDownMergeSort, Algo18, i + 1);
+        test_quicksort(data, size, &QuickSortMedian, Algo16, i + 1);
+        test_quicksort(data, size, &QuickSortRandomAndMedian, Algo17, i + 1);
+        test_sort(data, size, &insertion_sort, Algo18, i + 1);
+        test_sort(data, size, &selection_sort, Algo19, i + 1);
+        test_mergesort(data, size, &TopDownMergeSort, Algo20, i + 1);
 
         free(data);
+        debug("%d iter", i);
     }
 
     calculate_average(Algo1);
@@ -331,14 +340,15 @@ int main(int argc, char* argv[])
     calculate_average(Algo16);
     calculate_average(Algo17);
     calculate_average(Algo18);
+    calculate_average(Algo19);
+    calculate_average(Algo20);
 
-
-    for (int i = 0; i < 18; i++) {
+    for (int i = 0; i < 20; i++) {
         print_algo(Res->algorithms[i]);
     }
 
 
-    Algorithm** target = malloc(18 * sizeof(Algorithm));
+    Algorithm** target = malloc(20 * sizeof(Algorithm));
 
     target[0] = Algo1;
     target[1] = Algo2;
@@ -358,13 +368,15 @@ int main(int argc, char* argv[])
     target[15] = Algo16;
     target[16] = Algo17;
     target[17] = Algo18;
+    target[18] = Algo19;
+    target[19] = Algo20;
 
-    target = rank_algorithms(target, 0, 17);
+    target = rank_algorithms(target, 0, 19);
 
     printf("Fastest algorithms (ranking):\n");
     printf("=============================\n");
 
-    for (int i = 0; i < 18; i++) {
+    for (int i = 0; i < 20; i++) {
         printf("%d. ", i + 1);
         printf("%s\n", target[i]->type);
         printf("Average time: %f\n", target[i]->avg_time);
@@ -378,6 +390,113 @@ int main(int argc, char* argv[])
     printf("================================\n");
 
     printf("Mem used total: %d\n", memoryStats.memUsed);
+
+
+    free(Res);
+
+
+    for (int i = 0; i < array_count; i++) {
+        free(Algo1->iterations[i]);
+    }
+    free(Algo1);
+
+    for (int i = 0; i < array_count; i++) {
+        free(Algo2->iterations[i]);
+    }
+    free(Algo2);
+
+    for (int i = 0; i < array_count; i++) {
+        free(Algo3->iterations[i]);
+    }
+    free(Algo3);
+
+    for (int i = 0; i < array_count; i++) {
+        free(Algo4->iterations[i]);
+    }
+    free(Algo4);
+
+    for (int i = 0; i < array_count; i++) {
+        free(Algo5->iterations[i]);
+    }
+    free(Algo5);
+
+    for (int i = 0; i < array_count; i++) {
+        free(Algo6->iterations[i]);
+    }
+    free(Algo6);
+
+    for (int i = 0; i < array_count; i++) {
+        free(Algo7->iterations[i]);
+    }
+    free(Algo7);
+
+    for (int i = 0; i < array_count; i++) {
+        free(Algo8->iterations[i]);
+    }
+    free(Algo8);
+
+    for (int i = 0; i < array_count; i++) {
+        free(Algo9->iterations[i]);
+    }
+    free(Algo9);
+
+    for (int i = 0; i < array_count; i++) {
+        free(Algo10->iterations[i]);
+    }
+    free(Algo10);
+
+    for (int i = 0; i < array_count; i++) {
+        free(Algo11->iterations[i]);
+    }
+    free(Algo11);
+    
+    for (int i = 0; i < array_count; i++) {
+        free(Algo12->iterations[i]);
+    }
+    free(Algo12);
+
+    for (int i = 0; i < array_count; i++) {
+        free(Algo13->iterations[i]);
+    }
+    free(Algo13);
+    
+    for (int i = 0; i < array_count; i++) {
+        free(Algo14->iterations[i]);
+    }
+    free(Algo14);
+
+    for (int i = 0; i < array_count; i++) {
+        free(Algo15->iterations[i]);
+    }
+    free(Algo15);
+    
+    for (int i = 0; i < array_count; i++) {
+        free(Algo16->iterations[i]);
+    }
+    free(Algo16);
+
+    for (int i = 0; i < array_count; i++) {
+        free(Algo17->iterations[i]);
+    }
+    free(Algo17);
+
+    for (int i = 0; i < array_count; i++) {
+        free(Algo18->iterations[i]);
+    }
+    free(Algo18);
+
+    for (int i = 0; i < array_count; i++) {
+        free(Algo19->iterations[i]);
+    }
+    free(Algo19);
+
+    for (int i = 0; i < array_count; i++) {
+        free(Algo20->iterations[i]);
+    }
+    free(Algo20);
+
+
+    free(target);
     free(memoryStats.memJournal);
 }
 
@@ -398,12 +517,10 @@ void filldata(int* data, int size, int min, int max, int repeat)
         int x;
 
         // Non-duplicate number generation
-        debug("%d", repeat);
 
         i = 0;
         while (i < repeat) {
             int index = rand() % size;
-            debug("%d", index);
 
             for (x = 0; x < i; x++) {
                 if (indexes[x] == index) {
@@ -416,7 +533,6 @@ void filldata(int* data, int size, int min, int max, int repeat)
         }
 
         for (i = 0; i < repeat; i++) {
-            debug("%d", indexes[i]);
             data[indexes[i]] = repeat_value;
         }
     }
@@ -431,13 +547,17 @@ void test_sort(int* data, int size, sort_pointer func, Algorithm* Algo, int no)
 
     begin = clock();
 
-    int* target = malloc(size * sizeof(int));
+    int* target = NULL;
+    target = malloc(size * sizeof(int));
     if (!target)
         die("Memory error.");
 
     memcpy(target, data, size * sizeof(int));
 
     Iteration* Iter = malloc(sizeof(Iteration));
+    if (Iter == NULL) {
+        exit(1);
+    }
     Iter->no = no;
 
     if (is_sorted(func(target, size), size)) {
@@ -452,23 +572,28 @@ void test_sort(int* data, int size, sort_pointer func, Algorithm* Algo, int no)
         Iter->time_spent = time_spent;
     } else {
         Iter->is_sorted = 0;
+        
     };
 
     Algo->iterations[no - 1] = Iter;
 
+    if (target == NULL) {
+        debug("Target is NULL");
+    }
+
     free(target);
 }
 
-void test_quicksort(
-    int* data, int size, quicksort_pointer func, Algorithm* Algo, int no)
-{
+
+void test_quicksort(int* data, int size, quicksort_pointer func, Algorithm* Algo, int no) {
 
     count_ncomp = 0;
     count_assign = 0;
 
     begin = clock();
 
-    int* target = malloc(size * sizeof(int));
+    int* target = NULL;
+    target = malloc(size * sizeof(int));
     if (!target)
         die("Memory error.");
 
@@ -477,7 +602,8 @@ void test_quicksort(
     Iteration* Iter = malloc(sizeof(Iteration));
     Iter->no = no;
 
-    if (is_sorted(func(target, 0, size - 1), size)) {
+    if (is_sorted(func(target, 0, size), size)) {
+        debug("ISSORTED");
         end = clock();
         clocks = (double)(end - begin);
         time_spent = clocks / CLOCKS_PER_SEC;
@@ -505,7 +631,8 @@ void test_mergesort(
 
     begin = clock();
 
-    int* target = malloc(size * sizeof(int));
+    int *target = NULL;
+    target = malloc(size * sizeof(int));
     if (!target)
         die("Memory error.");
 
@@ -536,8 +663,11 @@ void test_mergesort(
 
     Algo->iterations[no - 1] = Iter;
 
+    free(working_array);
     free(target);
 }
+
+
 
 void print_algo(Algorithm* Algo)
 {
@@ -576,6 +706,10 @@ void calculate_average(Algorithm* Algo)
     int sorted_count = array_count;
 
     for (int i = 0; i < array_count; i++) {
+
+        debug("is sorted %d", Algo->iterations[i]->is_sorted);
+        debug("Array count: %d", i);
+
         if (!Algo->iterations[i]->is_sorted) {
             sorted_count--;
         } else {
@@ -585,12 +719,13 @@ void calculate_average(Algorithm* Algo)
             sum_time += Algo->iterations[i]->time_spent;
         }
     }
-
-    Algo->avg_comp = sum_comp / sorted_count;
-    Algo->avg_assign = sum_assign / sorted_count;
-    Algo->avg_clocks = (double)(sum_clocks / sorted_count);
-    Algo->avg_time = (double)(sum_time / sorted_count);
-    Algo->iter_count = sorted_count;
+    if (sorted_count > 0) {
+        Algo->avg_comp = sum_comp / sorted_count;
+        Algo->avg_assign = sum_assign / sorted_count;
+        Algo->avg_clocks = (double)(sum_clocks / sorted_count);
+        Algo->avg_time = (double)(sum_time / sorted_count);
+        Algo->iter_count = sorted_count;
+    }
 }
 
 Algorithm** rank_algorithms(Algorithm** target, int first, int last)
