@@ -144,6 +144,7 @@ Algorithm** rank_algorithms(Algorithm** target, int first, int last);
 MemoryStats memoryStats;
 
 int array_count;
+int algo_count;
 
 int main(int argc, char* argv[])
 {
@@ -154,6 +155,8 @@ int main(int argc, char* argv[])
     Res->date = "2017-12-16";
     Res->arch = "Arch Linux x86_64";
     Res->compiler = "gcc";
+    
+    algo_count = 21;
 
     // creating algorithm structures
     Algorithm* Algo1 = malloc(sizeof(Algorithm));
@@ -236,6 +239,11 @@ int main(int argc, char* argv[])
     Algo20->type = "top down merge sort";
     Algo20->complexity = "O (n log n)";
 
+    Algorithm* Algo21 = malloc(sizeof(Algorithm));
+    Algo21->type = "heap sort";
+    Algo21->complexity = "O (n log n)";
+
+
     Res->algorithms[0] = Algo1;
     Res->algorithms[1] = Algo2;
     Res->algorithms[2] = Algo3;
@@ -256,6 +264,7 @@ int main(int argc, char* argv[])
     Res->algorithms[17] = Algo18;
     Res->algorithms[18] = Algo19;
     Res->algorithms[19] = Algo20;
+    Res->algorithms[20] = Algo21;
 
     memoryStats.memJournal = malloc(10 * sizeof(int));
 
@@ -317,6 +326,7 @@ int main(int argc, char* argv[])
         test_sort(data, size, &insertion_sort, Algo18, i + 1);
         test_sort(data, size, &selection_sort, Algo19, i + 1);
         test_mergesort(data, size, &TopDownMergeSort, Algo20, i + 1);
+        test_sort(data, size, &heapSort, Algo21, i + 1);
 
         free(data);
         debug("%d iter", i);
@@ -342,13 +352,14 @@ int main(int argc, char* argv[])
     calculate_average(Algo18);
     calculate_average(Algo19);
     calculate_average(Algo20);
+    calculate_average(Algo21);
 
-    for (int i = 0; i < 20; i++) {
+    for (int i = 0; i < algo_count; i++) {
         print_algo(Res->algorithms[i]);
     }
 
 
-    Algorithm** target = malloc(20 * sizeof(Algorithm));
+    Algorithm** target = malloc(algo_count * sizeof(Algorithm));
 
     target[0] = Algo1;
     target[1] = Algo2;
@@ -370,13 +381,14 @@ int main(int argc, char* argv[])
     target[17] = Algo18;
     target[18] = Algo19;
     target[19] = Algo20;
+    target[20] = Algo21;
 
-    target = rank_algorithms(target, 0, 19);
+    target = rank_algorithms(target, 0, algo_count-1);
 
     printf("Fastest algorithms (ranking):\n");
     printf("=============================\n");
 
-    for (int i = 0; i < 20; i++) {
+    for (int i = 0; i < algo_count; i++) {
         printf("%d. ", i + 1);
         printf("%s\n", target[i]->type);
         printf("Average time: %f\n", target[i]->avg_time);
@@ -495,6 +507,10 @@ int main(int argc, char* argv[])
     }
     free(Algo20);
 
+    for (int i = 0; i < array_count; i++) {
+        free(Algo21->iterations[i]);
+    }
+    free(Algo21);
 
     free(target);
     free(memoryStats.memJournal);

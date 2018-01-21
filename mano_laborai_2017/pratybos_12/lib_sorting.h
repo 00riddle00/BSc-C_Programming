@@ -55,4 +55,11 @@ void TopDownMerge(int* A, int iBegin, int iMiddle, int iEnd, int* B);
 
 void CopyArray(int* A, int iBegin, int iEnd, int* B);
 
+#define MAX(x, y) (((x) > (y)) ? (x) : (y))
+
+int* heapSort(int arr[], int n);
+void heapify(int arr[], int n, int i);
+void buildHeap(int arr[], int n);
+void printArray(int* arr, int n);
+
 #endif
