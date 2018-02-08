@@ -67,6 +67,27 @@
  j) Sąlajos metodas (angl. merge sort)
  */
 
+// TODO add these sorts:
+
+/*(+) bubble_sort*/
+/*(+++++) bubble_sort optimizations (5)*/
+/*(+++) quicksort (pivot first, median/random median)*/
+/*(+) insertion sort*/
+/*(+) selection sort*/
+/*(+) merge sort*/
+/*(+) heap sort*/
+/*(-)tree sort*/
+/*(-)smooth sort*/
+/*(-)comb sort*/
+/*(-)Shell sort*/
+/*(-)Intro sort*/
+/*(-)Tim sort*/
+/*(-)Bucket Sort*/
+/*(-)Radix Sort */
+/*(-)Counting Sort*/
+/*(-)Cubesort*/
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>

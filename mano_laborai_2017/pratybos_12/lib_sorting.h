@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <time.h>
 
+//----------------SORT_HELPERS.H----------------------------//
 // How many comparisons are made between neighbor element
 extern int count_ncomp;
 
@@ -19,7 +20,9 @@ extern double time_spent;
 
 void swap(int* a, int* b);
 void swap_three(int* a, int* b, int* c);
+//----------------/SORT_HELPERS.H----------------------------//
 
+//--------------------BUBBLE SORT----------------------------//
 int* bubble_sort_a(int* data, int size);
 int* bubble_sort_b(int* data, int size);
 int* bubble_sort_c(int* target, int size);
@@ -34,13 +37,18 @@ int* bubble_sort_c_and_e(int* target, int size);
 int* bubble_sort_c_and_f(int* target, int size);
 int* bubble_sort_b_and_e_and_f(int* target, int size);
 int* bubble_sort_b_and_c_and_e_and_f(int* target, int size);
+//--------------------/BUBBLE SORT----------------------------//
+
+//-----------------------QUICKSORT----------------------------//
 int* quicksort(int* target, int start, int end);
 int* QuickSortMedian(int* a, int start, int end);
 int* QuickSortRandomAndMedian(int* a, int start, int end);
+//-----------------------/QUICKSORT----------------------------//
 
 int* insertion_sort(int* target, int size);
 int* selection_sort(int* target, int size);
 
+// ------------------------MERGE SORT------------------------------//
 // Array A[] has the items to sort; array B[] is a work array.
 void TopDownMergeSort(int* A, int* B, int n);
 
@@ -54,12 +62,24 @@ void TopDownSplitMerge(int* B, int iBegin, int iEnd, int* A);
 void TopDownMerge(int* A, int iBegin, int iMiddle, int iEnd, int* B);
 
 void CopyArray(int* A, int iBegin, int iEnd, int* B);
+// ------------------------/MERGE SORT------------------------------//
 
-#define MAX(x, y) (((x) > (y)) ? (x) : (y))
+// ------------------------HEAP SORT------------------------------//
 
-int* heapSort(int arr[], int n);
-void heapify(int arr[], int n, int i);
-void buildHeap(int arr[], int n);
-void printArray(int* arr, int n);
+struct MaxHeap {
+    int size;
+    int* array;
+};
 
+// The main function to heapify a Max Heap. The function
+// assumes that everything under given root (element at
+// index idx) is already heapified
+void maxHeapify(struct MaxHeap* maxHeap, int idx);
+
+// A utility function to create a max heap of given capacity
+struct MaxHeap* createAndBuildHeap(int *array, int size);
+
+// The main function to sort an array of given size
+int* heapSort(int* array, int size);
+// ------------------------/HEAP SORT------------------------------//
 #endif
