@@ -1,2 +1,2 @@
-CFLAGS=-Wall -xc -g -lm -std=gnu99
+CFLAGS=-Wall -Wextra -g -lm -std=gnu11
 

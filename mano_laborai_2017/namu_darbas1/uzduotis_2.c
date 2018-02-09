@@ -727,63 +727,6 @@ void get_array_elements(Array *binary_array) {
 }
 
 
-void random_binary(Array *binary_array) {
-
-    int random;
-    int digits;
-    int number;
-    int *rarray;
-    int count;
-    int size = binary_array->size;
-    int i;
-    int j;
-
-    rarray = malloc(size * sizeof(int));
-    if (rarray == NULL) die();
-
-
-    for (i = 0; i < size; i++) {
-        number = 0;
-        digits = 1 + (rand() % 10);
-        count = digits - 1;
-
-        for (j = 0; j < digits; j++) {
-            random = (rand() % 2) * pow(10, count);
-            number += random;
-            count--;
-        }
-        rarray[i] = number;
-    }
-
-    binary_array->elements = malloc(size * sizeof(int));
-    if (binary_array->elements == NULL) die();
-
-    printf("Generated binary numbers:\n");
-    for (i = 0; i < size; i++) {
-        printf("%d ", rarray[i]);
-        binary_array->elements[i] = rarray[i];
-    }
-    printf("\n");
-
-    free(rarray);
-
-}
-
-
-bool is_binary(int number) {
-    int dv;
-    while (number != 0) {
-        dv = number % 10;
-
-        if (dv > 1) {
-            return false;
-        }
-        number /= 10;
-    }
-    return true;
-}
-
-
 void unique_errors(int *errors, int size) {
 
     int i;
@@ -801,44 +744,6 @@ void unique_errors(int *errors, int size) {
             printf("%d ", errors[i]);
         }
     }
-}
-
-
-Array *binary_to_decimal(Array *binary_array) {
-    int size = binary_array->size;
-    int *elements = NULL;
-    int i;
-    int num;
-    Array *decimal_array = malloc(sizeof(Array));
-    if (decimal_array == NULL) die();
-
-    decimal_array->size = size;
-    decimal_array->elements = malloc(size * sizeof(int));
-    if (decimal_array->elements == NULL) die();
-
-    elements = malloc(size * sizeof(int));
-    if (elements == NULL) die();
-
-    for (i = 0; i < size; i++) {
-        num = binary_array->elements[i];
-        int decimal_num = 0, base = 1, rem;
-        while (num > 0) {
-            rem = num % 10;
-            decimal_num = decimal_num + rem * base;
-            num = num / 10;
-            base = base * 2;
-        }
-        elements[i] = decimal_num;
-    }
-    printf("Your numbers, converted to decimal notation:\n");
-    for (i = 0; i < size; i++) {
-        printf("%d ", elements[i]);
-        decimal_array->elements[i] = elements[i];
-    }
-    printf("\n");
-
-    free(elements);
-    return decimal_array;
 }
 
 Database *database_create() {
