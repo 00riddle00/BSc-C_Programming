@@ -70,6 +70,7 @@
 #define MAX_NUMBER_SIZE 10
 #define MAX_ROWS 100
 #define MAX_LINE 100
+#define MAX_PARAMS 2
 
 //2. Automobilis (firmos pavadinimas, modelio pavadinimas, pagaminimo metai, automobilio kaina).
 typedef struct {
@@ -97,27 +98,17 @@ typedef struct {
     char** params;
 } Input;
 
-// prints out the error message and exits.
-// use only in case of memory errors.
-void die();
+void get_input(Input* input);
+
+int valid_input(Input* input);
+
+void clear_input(Input* input);
 
 // prompt for user input ([Y/n])
 //
 // ::params: message - prompt message
 // ::return: (decision (yes or no))
 int choice(const char *message);
-
-void get_input(Input* input);
-
-void process_input(Input* input);
-
-void clear_input(Input* input);
-
-// free duplicated strings in scanning
-// user input (fuction: get_input())
-//
-// ::params: params - (array of input parameters (max = 3))
-void free_dup(char ***params);
 
 // description
 void get_car(Car *car);
@@ -168,6 +159,10 @@ void database_clear(Database *db);
 // ::params: cur - (current) Address
 void cleanup(Address *cur);
 
+// prints out the error message and exits.
+// use only in case of memory errors.
+void die();
+
 
 int main(int argc, char *argv[]) {
     Database *db = database_create();
@@ -190,10 +185,8 @@ int main(int argc, char *argv[]) {
     int id;
 
     // initialize input variable
-    int max_params = 2;
     Input* input = (Input*) malloc(sizeof(Input));
-    input->params = malloc(max_params * sizeof(char *));
-    /*input->params = calloc(max_params, max_params * sizeof(char *));*/
+    input->params = malloc(MAX_PARAMS * sizeof(char *));
     input->count = 0;
     input->valid = 0;
 
@@ -224,13 +217,13 @@ int main(int argc, char *argv[]) {
         printf("%s\n", separator);
 
         if (cmd) {
-            process_input(input);
             cmd = 0;
-            if (!input->valid) {
+            if (!valid_input(input)) {
                 clear_input(input);
                 continue;
             }
         } else {
+            clear_input(input);
             get_input(input);
         }
 
@@ -239,17 +232,6 @@ int main(int argc, char *argv[]) {
         if (input->params[1] != NULL) {
             id = atoi(input->params[1]);
         }
-
-        // FIXME ar reikia siu eiluciu?
-        /*if (input->params[2] != NULL) {*/
-            /*printf("Too much params");*/
-            /*option = params[2][0];*/
-        /*}*/
-
-        // FIXME ar reikia sios eilutes?
-        /*free_dup(&input->params);*/
-
-        /*free(input->params);*/
 
         switch (action) {
             case 'g':
@@ -300,22 +282,116 @@ int main(int argc, char *argv[]) {
                 printf("Goodbye!\n");
                 return 0;
             default:
-                printf("Invalid action, only: g=get, s=set, d=delete, "
-                               "l=list, q=quit, i=info\n");
+                printf("Invalid action, only: g=get, s=set, d=delete, l=list, q=quit, i=info\n");
         }
 
     }
 }
 
+void get_input(Input* input) {
 
-void die() {
-    char *message = "Memory error";
-    if (errno) {
-        perror(message);
-    } else {
-        printf("ERROR: %s\n", message);
+    char *pch;
+
+    int max_params_line = 100;
+    char line[max_params_line];
+
+    while (1) {
+        printf("[enter \"i\" for info] main shell > ");
+
+        fgets(line, sizeof(line), stdin);
+
+        pch = strtok(line, " \n");
+        while (pch != NULL) {
+
+            if (input->count < MAX_PARAMS + 1) {
+                // malloc() is used in strdup;
+                input->params[input->count] = pch ? strdup(pch) : pch;
+                if (!pch) die();
+            }
+
+            pch = strtok(NULL, " \n");
+            input->count++;
+        }
+
+        if (valid_input(input)) {
+            input->valid = 1;
+            break;
+        } else {
+            clear_input(input);
+        }
     }
-    exit(1);
+}
+
+int valid_input(Input* input) {
+
+    // Validate argument count
+    int count = input->count;
+
+    if (count == 0) {
+        printf("The input is empty.\n");
+        return 0;
+    }
+
+    if (count > MAX_PARAMS) {
+        printf("Too many arguments\n");
+        return 0;
+    }
+
+
+    // Validate action
+    char *all_actions = "g,s,d,l,c,i,q,get,set,delete,list,clear,info,quit";
+    if (strstr(all_actions, input->params[0]) == NULL) {
+        printf("Such action does not exist\n");
+        return 0;
+    }
+
+
+    char action = input->params[0][0];
+
+    char *actions = "gsdlciq";
+    if (strchr(actions, action) == NULL) {
+        printf("Such action does not exist\n");
+        return 0;
+    }
+
+
+    if (count == 1) {
+        char *actions = "gsd";
+        if (strchr(actions, action) != NULL) {
+            printf("ID is not submitted\n");
+            return 0;
+        }
+    }
+
+
+    // Validate id
+    if (count > 1) {
+
+        char *one_args = "licq";
+        if (strchr(one_args, action) != NULL) {
+            printf("Too much arguments for this action\n");
+            return 0;
+        }
+
+        int id = atoi(input->params[1]);
+
+        // id being equal to 0 in condition
+        // below also validates from char input
+        if (id <= 0 || id > MAX_SIZE) {
+            printf("ID should be a positive integer less or equal to 100.\n");
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+void clear_input(Input* input) {
+    for (int i = 0; i < MAX_PARAMS; ++i) {
+        input->params[i] = NULL;
+    }
+    input->valid = 0;
+    input->count = 0;
 }
 
 
@@ -346,161 +422,6 @@ int choice(const char *message) {
     }
 }
 
-void get_input(Input* input) {
-
-    input->count = 0;
-
-    char *pch;
-
-    int max_params_line = 100;
-    char line[max_params_line];
-
-    while (1) {
-        printf("[enter \"i\" for info] main shell > ");
-
-        fgets(line, sizeof(line), stdin);
-
-        pch = strtok(line, " \n");
-        while (pch != NULL) {
-
-            if (input->count < 3) {
-                // malloc() is used in strdup;
-                input->params[input->count] = pch ? strdup(pch) : pch;
-                if (!pch) die();
-            }
-
-            pch = strtok(NULL, " \n");
-            input->count++;
-        }
-
-        process_input(input);
-
-        if (input->valid) {
-            break;
-        } else {
-            debug("else");
-            clear_input(input);
-            debug("input cleared");
-        }
-    }
-
-}
-
-void process_input(Input* input) {
-
-    input->valid = 1;
-
-    // Validate argument count
-    int count = input->count;
-    int max_params = 3;
-
-    if (count == 0) {
-        printf("The input is empty.\n");
-        input->valid = 0;
-        return;
-    }
-
-    if (count > max_params) {
-        printf("Too many arguments\n");
-        /*free_dup(&input->params);*/
-        input->valid = 0;
-        return;
-    }
-
-
-    // Validate action
-    char *all_actions = "g,s,d,l,c,i,q,get,set,delete,list,clear,info,quit";
-    if (strstr(all_actions, input->params[0]) == NULL) {
-        printf("Such action does not exist\n");
-        /*free_dup(&input->params);*/
-        input->valid = 0;
-        return;
-    }
-
-
-    char action = input->params[0][0];
-
-    char *actions = "gsdlciq";
-    if (strchr(actions, action) == NULL) {
-        printf("Such action does not exist\n");
-        /*free_dup(&input->params);*/
-        input->valid = 0;
-        return;
-    }
-
-
-    if (count == 1) {
-        char *actions = "gsd";
-        if (strchr(actions, action) != NULL) {
-            printf("ID is not submitted\n");
-            /*free_dup(&input->params);*/
-            input->valid = 0;
-            return;
-        }
-    }
-
-
-    // Validate id
-    if (count > 1) {
-
-        char *one_args = "licq";
-        if (strchr(one_args, action) != NULL) {
-            printf("Too much arguments for this action\n");
-            /*free_dup(&input->params);*/
-            input->valid = 0;
-            return;
-        }
-
-        int id = atoi(input->params[1]);
-
-        // id being equal to 0 in condition
-        // below also validates from char input
-        if (id <= 0 || id > MAX_SIZE) {
-            printf("ID should be a positive integer less or equal to 100.\n");
-            /*free_dup(&input->params);*/
-            input->valid = 0;
-            return;
-        }
-    }
-
-
-    // Validate option
-    if (count > 2) {
-
-        char *all_options = "r,random,rand";
-        if (strstr(all_options, input->params[2]) == NULL) {
-            printf("Such option does not exist\n");
-            /*free_dup(&input->params);*/
-            input->valid = 0;
-            return;
-        }
-
-        char option = input->params[2][0];
-
-        char *options = "r";
-        if (strchr(options, option) == NULL) {
-            printf("Such option does not exist\n");
-            /*free_dup(&input->params);*/
-            input->valid = 0;
-            return;
-        }
-    }
-}
-
-void clear_input(Input* input) {
-    char **it;
-    /*for (it = (input->params); it && *it; ++it) {*/
-    for (it = (input->params); it && *it; ++it) {
-        it = NULL;
-    }
-}
-
-void free_dup(char ***params) {
-    char **it;
-    for (it = *params; it && *it; ++it) {
-        free(*it);
-    }
-}
 
 void get_car(Car *car) {
     car->make = malloc(30);
@@ -589,11 +510,9 @@ Database *database_create() {
     return db;
 }
 
-void database_set(Database *db, int id, Car *car) { // Array *binary_array, Array *decimal_array) {
+void database_set(Database *db, int id, Car *car) { 
     Address *addr = &db->rows[id];
 
-    /*addr->binary_array = binary_array;*/
-    /*addr->decimal_array = decimal_array;*/
     addr->car = car;
     addr->set = 1;
 
@@ -679,4 +598,16 @@ void database_clear(Database *db) {
 void cleanup(Address *cur) {
     free(cur->car);
 }
+
+
+void die() {
+    char *message = "Memory error";
+    if (errno) {
+        perror(message);
+    } else {
+        printf("ERROR: %s\n", message);
+    }
+    exit(1);
+}
+
 
