@@ -41,6 +41,7 @@
 #include <errno.h>
 
 #include "dbg.h"
+#include "lib_riddle.h"
 
 #define MAX_ID 100
 #define MAX_ROWS 100
@@ -105,17 +106,6 @@ void clear_input(Input* input);
 // ::params: car object is modified
 void get_car(Car *car);
 
-// prompt for user input ([Y/n])
-//
-// ::params: message - prompt message
-// ::return: (decision (1 or 0))
-int choice(const char *message);
-
-// prints out the error message and exits.
-// if errno, prints perror(message);
-//
-// ::params: message - error message
-void die(const char* message);
 
 // open database from file. If file does not
 // exist, return an error and exit. If database is failed
@@ -178,6 +168,55 @@ void database_clear(Connection *conn);
 // 
 // ::params: conn - Connection struct
 void database_close(Connection *conn);
+
+void perform_action(int action) {
+    int field; 
+    int type;
+    char* value;
+
+    switch(action) {
+        case 1:
+            printf("By which field would you like to filter? (enter a number)\n");
+            printf("(1) Make\n");
+            printf("(2) Model\n");
+            printf("(3) Year\n");
+            printf("(4) Price\n");
+
+            field = get_num_interval("(Enter a number) > ", "Such option does not exist", 1, 4);
+
+            printf("How would you like to filter?\n");
+            printf("(1) Entry is equal to the given value\n");
+            printf("(2) Entry contains the given value\n");
+            printf("(3) Entry is not equal to the given value\n");
+            printf("(4) Entry does not contain the given value\n");
+
+            type = get_num_interval("(Enter a number) > ", "Such option does not exist", 1, 4);
+
+            printf("Please enter a value to be filtered by\n");
+            value = get_text("(Enter a value) > ", value);
+
+            /*filter_data(field, type, value);*/
+            break;
+        case 2:
+            printf("By which field would you like to sort? (enter a number)\n");
+            printf("(1) Make\n");
+            printf("(2) Model\n");
+            printf("(3) Year\n");
+            printf("(4) Price\n");
+
+            field = get_num_interval("(Enter a number) > ", "Such option does not exist", 1, 4);
+
+            printf("How would you like to sort?\n");
+            printf("(1) Ascending order\n");
+            printf("(2) Descending order\n");
+
+            type = get_num_interval("(Enter a number) > ", "Such option does not exist", 1, 2);
+
+            /*sort_data(choice, type);*/
+            break;
+    }
+
+}
 
 
 int main(int argc, char *argv[]) {
@@ -258,6 +297,14 @@ set and delete operations\nrequire ID parameter.\nExamples: (1) get 1 (get 1st e
         }
 
         switch (action) {
+            case 'a':
+                printf("What action would you like to perform? (enter a number)\n");
+                printf("(1) Filter\n");
+                printf("(2) Sort\n");
+
+                action = get_num_interval("(Enter a number) > ", "Such option does not exist", 1, 2);
+                perform_action(action);
+                break;
             case 'g':
                 database_get(conn, id);
                 break;
@@ -378,7 +425,7 @@ int valid_input(Input* input) {
 
     // Validate action
     
-    char *all_actions = "g,s,d,l,c,i,q,get,set,delete,list,clear,info,quit";
+    char *all_actions = "a,g,s,d,l,c,i,q,action,get,set,delete,list,clear,info,quit";
     if (strstr(all_actions, input->params[0]) == NULL) {
         printf("Such action does not exist\n");
         return 0;
@@ -387,7 +434,7 @@ int valid_input(Input* input) {
 
     char action = input->params[0][0];
 
-    char *actions = "gsdlciq";
+    char *actions = "agsdlciq";
     if (strchr(actions, action) == NULL) {
         printf("Such action does not exist\n");
         return 0;
@@ -407,7 +454,7 @@ int valid_input(Input* input) {
     
     if (count > 1) {
 
-        char *one_args = "licq";
+        char *one_args = "alicq";
         if (strchr(one_args, action) != NULL) {
             printf("Too much arguments for this action\n");
             return 0;
@@ -443,6 +490,7 @@ void get_car(Car *car) {
     int temp;
     int error;
 
+    // Enter make
     while (1) {
         printf("Enter make > ");
         memset(car->make,0,sizeof(car->make));
@@ -471,76 +519,15 @@ void get_car(Car *car) {
         }
     }
 
-    while (1) {
-        printf("Enter model > ");
-        if (scanf("%[^\n]%*c", car->model) == 1) {
-            break;
-        } else {
-            while((temp=getchar()) != EOF && temp != '\n');
-            printf("Please make sure that model is normal format\n");
-        }
-    }
+    // Enter model
+    car->model = get_word("Enter model > ", car->model);
 
-    // FIXME does not eat newline after no input and return key is pressed
-    while (1) {
-        printf("Enter year > ");
-        if (scanf("%d", &car->year) == 1 && car->year > EARLIEST_YEAR && car->year <= LATEST_YEAR) {
-            break;
-        } else {
-            while((temp=getchar()) != EOF && temp != '\n');
-            printf("Please make sure that year is normal format\n");
-        }
-    }
+    // Enter year
+    car->year =  get_num_interval("Enter year > ", "Please make sure that year is in normal format", EARLIEST_YEAR, LATEST_YEAR);
 
-    // FIXME does not eat newline after no input and return key is pressed
-    while (1) {
-        printf("Enter price > ");
-        if (scanf("%d", &car->price) == 1 && car->price > 0) {
-            break;
-        } else {
-            while((temp=getchar()) != EOF && temp != '\n');
-            printf("Please make sure that price is normal format\n");
-        }
-    }
+    // Enter price
+    car->price = get_pos_num("Enter price > ", 0);
 
-    while (getchar() != '\n');
-}
-
-int choice(const char *message) {
-
-    while (1) {
-        printf("%s", message);
-        printf(" [Y/n] ");
-        char decision;
-
-        if (scanf("%c", &decision) == 1 && getchar() == '\n') {
-
-            switch (decision) {
-                case 'y':
-                case 'Y':
-                    return 1;
-                case 'n':
-                case 'N':
-                    return 0;
-                default:
-                    printf("Invalid action, only: Y=yes, N=no\n");
-            }
-
-        } else {
-            printf("Invalid action, only: Y=yes, N=no\n");
-            while (getchar() != '\n');
-        }
-    }
-}
-
-void die(const char* message) {
-
-    if (errno) {
-        perror(message);
-    } else {
-        printf("ERROR: %s\n", message);
-    }
-    exit(1);
 }
 
 Connection *database_open(const char* filename) {
