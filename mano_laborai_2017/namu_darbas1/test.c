@@ -14,37 +14,20 @@
  |
  +-----------------------------------------------------------------------------
  |
- |  Description:  A number conversion program, where one can choose the type
- |                of conversion and input option (normal, random) and save
- |                both original and converted arrays to a database, which is
- |                then saved to a file. Currently it supports converting binary
- |                numbers to decimal notation. After creating database
- |                entries, user can retrieve or list entries, delete or
- |                update them. Database saving to a file is not yet supported.
+ |  Description:  A car database program, where one can perform get, list, 
+ |                create, edit and delete operations. The database is loaded
+ |                from and saved to the binary file. 
  |
- |  Constraints:  [1] When a user is prompted for an integer or integer array,
- |                the program is designed to accept and process only  positive
- |                integers.
- |                [2] Maximum binary number accepted is 1111111111.
- |                [3] Maximum size of an array is 100.
- |
+ |  Constraints:  
+ |                
  |	    Input:    Command line input by user
  |
  |	    Output:   Prompt messages, validation errors and final results
  |                are displayed one per line to the standard output.
  |
- |  Known bugs:   [1] After prompting user to update an entry, a second
- |                prompt to delete the entry appears, which is not needed and
- |                should be implied.
- |                [2] Segmentation fault on integer array input (have not yet
- |                been reproduced, happened with 50 integers on input.
- |                [3] Segmentation fault on input integers whose numeral count
- |                is 7, 8, 9
- |                [4] If user input exceeds the line buffer, the buffer is not
- |                cleared after
- |                that and next input scan takes old values.
- |
- |       TODOS:   add saving to a file
+ |  Known bugs:   
+ |                
+ |       TODOS:   
  |
  | Version
  | updates:     Currently this is the intial version
@@ -54,25 +37,20 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-
-#include <assert.h>
 #include <ctype.h>
 #include <errno.h>
-#include <math.h>
-#include <string.h>
-#include <time.h>
 
 #include "dbg.h"
 
-
-#define MAX_SIZE 100
-#define MAX_DATA 1536
-#define MAX_NUMBER_SIZE 10
+#define MAX_ID 100
 #define MAX_ROWS 100
 #define MAX_LINE 100
+#define MAX_TEXT_LENGTH 30
 #define MAX_PARAMS 2
+#define LATEST_YEAR 2018
+#define EARLIEST_YEAR 1920
 
-//2. Automobilis (firmos pavadinimas, modelio pavadinimas, pagaminimo metai, automobilio kaina).
+// car (make, model, year of making, car price)
 typedef struct {
     char *make;
     char *model;
@@ -84,7 +62,11 @@ typedef struct {
 typedef struct {
     int id;
     int set;
-    Car *car;
+    char car_make[10];
+    char car_model[10];
+    int car_year;
+    int car_price;
+    /*Car *car;*/
 } Address;
 
 // database
@@ -92,51 +74,87 @@ typedef struct {
     Address rows[MAX_ROWS];
 } Database;
 
+// input structure
 typedef struct {
     int count;
     int valid;
     char** params;
 } Input;
 
+// connection structure
+// has a pointer to file and a pointer to database
+typedef struct {
+    FILE *file;
+    Database *db;
+} Connection;
+
+// ::params: input - input structure is modified
 void get_input(Input* input);
 
+// ::params: input - input structure 
+// ::return: 1 if input is valid, else 0
 int valid_input(Input* input);
 
+// set input value and input count to 0, nullify pointers 
+// inside input->params
+//
+// ::params: input - input structure is modified
 void clear_input(Input* input);
+
+// prompt user to enter a new database entry (car) 
+// ::params: car object is modified
+void get_car(Car *car);
 
 // prompt for user input ([Y/n])
 //
 // ::params: message - prompt message
-// ::return: (decision (yes or no))
+// ::return: (decision (1 or 0))
 int choice(const char *message);
 
-// description
-void get_car(Car *car);
+// prints out the error message and exits.
+// if errno, prints perror(message);
+//
+// ::params: message - error message
+void die(const char* message);
+
+// open database from file. If file does not
+// exist, return an error and exit. If database is failed
+// to load, prompt user to create a new database
+//
+// ::params: filename - name of a file
+// ::return: connection struct
+Connection *database_open(const char* filename);
+
 
 // allocate space and create database
 // (initialize Address structs)
 //
-// ::return: Database
-Database *database_create();
+// ::params: conn - Connection struct
+void database_create(Connection* conn);
 
-// set Address struct (containing two dynamic arrays) in database
+// write current state of database to a file
+//
+// ::params: conn - Connection struct
+void database_write(Connection *conn);
+
+
+// set Address struct in database
 //
 // ::params: db - Database
 // ::params: id - entry id (user input)
-// ::params: binary array
-// ::params: decimal_array
-void database_set(Database *db, int id, Car *car); 
+// ::params: car - car struct
+void database_set(Connection* conn, int id, Car *car);
+
+// get address from database
+//
+// ::params: conn - connection struct
+// ::params: id - entry id (user input)
+void database_get(Connection *conn, int id);
 
 // get address from database
 //
 // ::params: db - Database
-// ::params: id - entry id (user input)
-void database_get(Database *db, int id);
-
-// get address from database
-//
-// ::params: db - Database
-void database_list(Database *db);
+void database_list(Connection *conn);
 
 // print address from database
 //
@@ -145,36 +163,38 @@ void address_print(Address *addr);
 
 // delete address from database
 //
-// ::params: db - Database
+// ::params: conn - Connection struct
 // ::params: id - entry id (user input)
-void database_delete(Database *db, int id);
+void database_delete(Connection *conn, int id);
 
 
-// description
-void database_clear(Database *db);
+// clear database
+// 
+// ::params: conn - Connection struct
+void database_clear(Connection *conn);
 
-// [1] free two Array's (struct) elements in Address (struct)
-// [2] free two Array's (struct) in Address (struct)
-//
-// ::params: cur - (current) Address
-void cleanup(Address *cur);
-
-// prints out the error message and exits.
-// use only in case of memory errors.
-void die();
+// close connection to a file, and free
+// database (conn->db) as well as connection (conn) structs
+// 
+// ::params: conn - Connection struct
+void database_close(Connection *conn);
 
 
 int main(int argc, char *argv[]) {
-    Database *db = database_create();
+    if (argc < 2) die ("USAGE: test <dbfile> <action> [action params]");
 
-    char about[] = "This is a car database program, where one can perform get, list, create, edit and delete "
+    char* filename = argv[1];
+    Connection* conn = database_open(filename);
+    /*int id = 0;*/
+
+    char* about = "This is a car database program, where one can perform get, list, create, edit and delete "
             "operations. The database is loaded from and saved to the binary file. Version: v.0";
 
-    char info[] = "Usage: in the main shell, input the Action[1] and ID[2].\n\n"
-            "[1] Action - g=get, l=list, s=set, d=delete, c=clear database, q=quit, i=info.\n"
-            "[2] ID - a positive integer not exceeding 100. Only get, set and delete operations\n"
-            "require ID parameter.\n"
-            "Examples: (1) get 1 (get 1st element) (2) l (list elements) (3) set 2 (set 2nd element)";
+    char* info = malloc(350 * sizeof(char*));
+    sprintf(info, "Usage: in the main shell, input the Action[1] and ID[2].\n\n[1] Action - g=get, l=list, \
+s=set, d=delete, c=clear database, q=quit, i=info.\n[2] ID - a positive integer not exceeding %d. Only get,\
+set and delete operations\nrequire ID parameter.\nExamples: (1) get 1 (get 1st element) (2) l (list elements)\
+(3) set 2 (set 2nd element)", MAX_ID);
 
     char* separator = "---------------------------------------------------";
 
@@ -184,7 +204,7 @@ int main(int argc, char *argv[]) {
     // id for database entries
     int id;
 
-    // initialize input variable
+    /*// initialize input variable*/
     Input* input = (Input*) malloc(sizeof(Input));
     input->params = malloc(MAX_PARAMS * sizeof(char *));
     input->count = 0;
@@ -195,18 +215,18 @@ int main(int argc, char *argv[]) {
     printf("%s\n", separator);
     printf("%s\n\n", info);
 
-    // process command line input
-    if (argc > 1) {
+    // process input from argv
+    if (argc > 2) {
         cmd = 1;
-        input->params[0] = argv[1];
+        input->params[0] = argv[2];
         input->count++;
 
-        if (argc > 2) {
-            input->params[1] = argv[2];
+        if (argc > 3) {
+            input->params[1] = argv[3];
             input->count++;
         }
         
-        if (argc > 3) {
+        if (argc > 4) {
             printf("Too many arguments\n");
             cmd = 0;
         }
@@ -216,55 +236,62 @@ int main(int argc, char *argv[]) {
     while (1) {
         printf("%s\n", separator);
 
+        // in case of argv input
         if (cmd) {
             cmd = 0;
             if (!valid_input(input)) {
                 clear_input(input);
                 continue;
             }
+        // else get input from user
         } else {
             clear_input(input);
             get_input(input);
         }
 
+        // setting action from input
         char action = (input->params)[0][0];
 
+        // setting id from input
         if (input->params[1] != NULL) {
             id = atoi(input->params[1]);
         }
 
         switch (action) {
             case 'g':
-                database_get(db, id);
+                database_get(conn, id);
                 break;
             case 's':; // An empty statement before a label
-                Address *addr = &db->rows[id];
+                Address *addr = &conn->db->rows[id];
                 if (addr->set) {
                     printf("Such entry already exists:\n");
-                    database_get(db, id);
+                    database_get(conn, id);
                     if (choice("Would you like to change it?")) {
-                        database_delete(db, id);
+                        database_delete(conn, id);
+                        database_write(conn);
                     } else {
                         break;
                     }
                 }
 
                 Car *car = malloc(sizeof(Car));
-                if (car == NULL) die();
+                if (car == NULL) die("Memory error");
                 get_car(car);
 
                 if (choice("Would you like to save?")) {
-                    database_set(db, id, car);
+                    database_set(conn, id, car);
+                    database_write(conn);
                 }
                 break;
             case 'd':
-                database_delete(db, id);
+                database_delete(conn, id);
+                database_write(conn);
                 break;
             case 'l':
-                database_list(db);
+                database_list(conn);
                 break;
             case 'c':
-                database_clear(db);
+                database_clear(conn);
                 break;
             case 'i':
                 printf("\n%s\n", separator);
@@ -272,12 +299,21 @@ int main(int argc, char *argv[]) {
                 break;
             case 'q':
                 for (int i = 0; i < MAX_ROWS; i++) {
-                    Address *cur = &db->rows[i];
+                    Address *cur = &conn->db->rows[i];
                     if (cur->set) {
-                        cleanup(cur);
+                        /*free(cur->car->make);*/
+                        /*free(cur->car->model);*/
+                        /*free(cur->car);*/
                     }
                 }
-                free(db);
+                /*free(db);*/
+                database_close(conn);
+                /*free(info);*/
+                /*free(input->params);*/
+                /*for (int i = 0; i < 2; ++i) {*/
+                    /*free(input->params[i]);*/
+                /*}*/
+                /*free(input);*/
 
                 printf("Goodbye!\n");
                 return 0;
@@ -292,8 +328,7 @@ void get_input(Input* input) {
 
     char *pch;
 
-    int max_params_line = 100;
-    char line[max_params_line];
+    char line[MAX_LINE];
 
     while (1) {
         printf("[enter \"i\" for info] main shell > ");
@@ -306,16 +341,18 @@ void get_input(Input* input) {
             if (input->count < MAX_PARAMS + 1) {
                 // malloc() is used in strdup;
                 input->params[input->count] = pch ? strdup(pch) : pch;
-                if (!pch) die();
+                if (!pch) die("Memory error");
             }
 
             pch = strtok(NULL, " \n");
             input->count++;
         }
 
+        // break if input is valid
         if (valid_input(input)) {
             input->valid = 1;
             break;
+        // else clear input and repeat
         } else {
             clear_input(input);
         }
@@ -325,6 +362,7 @@ void get_input(Input* input) {
 int valid_input(Input* input) {
 
     // Validate argument count
+   
     int count = input->count;
 
     if (count == 0) {
@@ -339,6 +377,7 @@ int valid_input(Input* input) {
 
 
     // Validate action
+    
     char *all_actions = "g,s,d,l,c,i,q,get,set,delete,list,clear,info,quit";
     if (strstr(all_actions, input->params[0]) == NULL) {
         printf("Such action does not exist\n");
@@ -365,6 +404,7 @@ int valid_input(Input* input) {
 
 
     // Validate id
+    
     if (count > 1) {
 
         char *one_args = "licq";
@@ -377,7 +417,7 @@ int valid_input(Input* input) {
 
         // id being equal to 0 in condition
         // below also validates from char input
-        if (id <= 0 || id > MAX_SIZE) {
+        if (id <= 0 || id > MAX_ID) {
             printf("ID should be a positive integer less or equal to 100.\n");
             return 0;
         }
@@ -385,6 +425,7 @@ int valid_input(Input* input) {
 
     return 1;
 }
+
 
 void clear_input(Input* input) {
     for (int i = 0; i < MAX_PARAMS; ++i) {
@@ -395,37 +436,9 @@ void clear_input(Input* input) {
 }
 
 
-int choice(const char *message) {
-
-    while (1) {
-        printf("%s", message);
-        printf(" [Y/n] ");
-        char decision;
-
-        if (scanf("%c", &decision) == 1 && getchar() == '\n') {
-
-            switch (decision) {
-                case 'y':
-                case 'Y':
-                    return 1;
-                case 'n':
-                case 'N':
-                    return 0;
-                default:
-                    printf("Invalid action, only: Y=yes, N=no\n");
-            }
-
-        } else {
-            printf("Invalid action, only: Y=yes, N=no\n");
-            while (getchar() != '\n');
-        }
-    }
-}
-
-
 void get_car(Car *car) {
-    car->make = malloc(30);
-    car->model= malloc(30);
+    car->make = malloc(MAX_TEXT_LENGTH);
+    car->model= malloc(MAX_TEXT_LENGTH);
     
     int temp;
     int error;
@@ -438,7 +451,7 @@ void get_car(Car *car) {
 
             error = 0;
 
-            for (int i = 0; i < 10; i++) {
+            for (int i = 0; i < MAX_TEXT_LENGTH; i++) {
                 if(isdigit(car->make[i])) {
                     error = 1;
                     break;
@@ -471,7 +484,7 @@ void get_car(Car *car) {
     // FIXME does not eat newline after no input and return key is pressed
     while (1) {
         printf("Enter year > ");
-        if (scanf("%d", &car->year) == 1 && car->year > 1920 && car->year < 2018) {
+        if (scanf("%d", &car->year) == 1 && car->year > EARLIEST_YEAR && car->year <= LATEST_YEAR) {
             break;
         } else {
             while((temp=getchar()) != EOF && temp != '\n');
@@ -491,48 +504,133 @@ void get_car(Car *car) {
     }
 
     while (getchar() != '\n');
-
 }
 
+int choice(const char *message) {
 
+    while (1) {
+        printf("%s", message);
+        printf(" [Y/n] ");
+        char decision;
 
-Database *database_create() {
-    Database *db = malloc(sizeof(Database));
-    if (db == NULL) die();
+        if (scanf("%c", &decision) == 1 && getchar() == '\n') {
+
+            switch (decision) {
+                case 'y':
+                case 'Y':
+                    return 1;
+                case 'n':
+                case 'N':
+                    return 0;
+                default:
+                    printf("Invalid action, only: Y=yes, N=no\n");
+            }
+
+        } else {
+            printf("Invalid action, only: Y=yes, N=no\n");
+            while (getchar() != '\n');
+        }
+    }
+}
+
+void die(const char* message) {
+
+    if (errno) {
+        perror(message);
+    } else {
+        printf("ERROR: %s\n", message);
+    }
+    exit(1);
+}
+
+Connection *database_open(const char* filename) {
+    Connection *conn = malloc(sizeof(Connection));
+    if(!conn) die("Memory error");
+
+    conn->db = malloc(sizeof(Database));
+    if(!conn->db) die("Memory error");
+
+    conn->file = fopen(filename, "r+");
+
+    if(conn->file) {
+        // load databae from file
+        int rc = fread(conn->db, sizeof(Database), 1, conn->file);
+
+        // if database is loaded unsucessfully
+        if (rc != 1) {
+            printf("Failed to load database\n");
+            if (choice("Would you like to create a new one?\n")) {
+                conn->file = fopen(filename, "w");
+                database_create(conn);
+                database_write(conn);
+            }
+        }
+    }
+
+    if (!conn->file) die("Failed to open the file");
+
+    return conn;
+}
+
+void database_create(Connection *conn) {
 
     int i = 0;
     for (i = 0; i < MAX_ROWS; i++) {
         // make a prototype to initialize it
         Address addr = {.id = i, .set = 0};
         // then just assign it
-        db->rows[i] = addr;
+        conn->db->rows[i] = addr;
     }
-    return db;
 }
 
-void database_set(Database *db, int id, Car *car) { 
-    Address *addr = &db->rows[id];
+void database_write(Connection *conn) {
+    rewind(conn->file);
 
-    addr->car = car;
+    int rc = fwrite(conn->db, sizeof(Database), 1, conn->file);
+    if (rc != 1) die("Failed to write database");
+
+    rc = fflush(conn->file);
+    if (rc == -1) die("Cannot flush database");
+}
+
+void database_set(Connection* conn, int id, Car *car) { 
+    Address *addr = &conn->db->rows[id];
+
+    /*addr->car = malloc(sizeof(Car));*/
+
+    /*addr->car = car;*/
+
+    strcpy(addr->car_make, car->make);
+    strcpy(addr->car_model, car->model);
+    addr->car_year = car->year;
+    addr->car_price = car->price;
     addr->set = 1;
 
     printf("Successfully saved, ID = %d\n", id);
 }
 
 
-void database_get(Database *db, int id) {
-    Address *addr = &db->rows[id];
+void database_get(Connection *conn, int id) {
+    Address *addr = &conn->db->rows[id];
     if (addr->set) {
+        printf("__________________________________________________________________________________________\n");
+        printf("| ID |            Make              |            Model             |   Year   |   Price  |\n");
+        printf("|_ __|______________________________|______________________________|__________|__________|\n");
         address_print(addr);
     } else {
         printf("ID is not set\n");
     }
 }
 
-void database_list(Database *db) {
+void database_list(Connection *conn) {
     int i = 0;
     int count = 0;
 
+    Database *db = conn->db;
+
+    printf("__________________________________________________________________________________________\n");
+    printf("| ID |            Make              |            Model             |   Year   |   Price  |\n");
+    printf("|_ __|______________________________|______________________________|__________|__________|\n");
     for (i = 0; i < MAX_ROWS; i++) {
         Address *cur = &db->rows[i];
         if (cur->set) {
@@ -548,21 +646,18 @@ void database_list(Database *db) {
 
 void address_print(Address *addr) {
 
-    printf("%d. ", addr->id);
-
-    printf("%s %s %d %d", addr->car->make, addr->car->model, addr->car->year, addr->car->price);
-
-    printf("\n");
+    printf("|%4d|%30s|%30s|%10d|%10d|\n", addr->id, addr->car_make, addr->car_model, addr->car_year, addr->car_price);
+    printf("|____|______________________________|______________________________|__________|__________|\n");
 }
 
 
-void database_delete(Database *db, int id) {
-    if (db->rows[id].set == 0) {
+void database_delete(Connection *conn, int id) {
+    if (conn->db->rows[id].set == 0) {
         printf("No such entry in database\n");
     } else {
         if (choice("Do you really want to delete this entry?")) {
-            Address *cur = &db->rows[id];
-            cleanup(cur);
+            Address *cur = &conn->db->rows[id];
+            /*free(cur->car);*/
 
             cur->set = 0;
             printf("Successfully deleted\n");
@@ -571,20 +666,21 @@ void database_delete(Database *db, int id) {
 }
 
 
-void database_clear(Database *db) {
+void database_clear(Connection *conn) {
     int i = 0;
     int count = 0;
 
     if (choice("Do you really want to clear the entire database?")) {
 
         for (i = 0; i < MAX_ROWS; i++) {
-            Address *cur = &db->rows[i];
+            Address *cur = &conn->db->rows[i];
             if (cur->set) {
-                cleanup(cur);
+                /*free(cur->car);*/
                 cur->set = 0;
                 count += 1;
             }
         }
+        database_write(conn);
 
         if (count) {
             printf("Database has been successfully cleared.\n");
@@ -594,20 +690,12 @@ void database_clear(Database *db) {
     }
 }
 
-
-void cleanup(Address *cur) {
-    free(cur->car);
-}
-
-
-void die() {
-    char *message = "Memory error";
-    if (errno) {
-        perror(message);
-    } else {
-        printf("ERROR: %s\n", message);
+void database_close(Connection *conn) {
+    if (conn) {
+        if (conn->file) fclose(conn->file);
+        if (conn->db) free(conn->db);
+        free(conn);
     }
-    exit(1);
 }
 
 
