@@ -75,6 +75,12 @@ typedef struct {
     Address rows[MAX_ROWS];
 } Database;
 
+
+// temporary database (used for sorting)
+typedef struct {
+    Address rows[MAX_ROWS];
+} TempDatabase;
+
 // input structure
 typedef struct {
     int count;
@@ -144,7 +150,9 @@ void database_get(Connection *conn, int id);
 // get address from database
 //
 // ::params: db - Database
-void database_list(Connection *conn);
+// ::params: reverse - whether to print in 
+// reverse order (used in sorting)
+void database_list(Database *db, int reverse);
 
 // print address from database
 //
@@ -169,7 +177,84 @@ void database_clear(Connection *conn);
 // ::params: conn - Connection struct
 void database_close(Connection *conn);
 
-void perform_action(int action) {
+
+Database* sort_by_year(Database* db, int first, int last)
+{
+
+    Address temp;
+    int pivot, j, i;
+
+    if (first < last) {
+        pivot = first;
+        i = first;
+        j = last;
+
+        while (i < j) {
+            while (
+                db->rows[i].car_year <= db->rows[pivot].car_year && i < last) {
+                i++;
+            }
+            while (db->rows[j].car_year > db->rows[pivot].car_year) {
+                j--;
+            }
+            if (i < j) {
+                temp = db->rows[i];
+                db->rows[i] = db->rows[j];
+                db->rows[j] = temp;
+            }
+        }
+
+        temp = db->rows[pivot];
+        db->rows[pivot] = db->rows[j];
+        db->rows[j] = temp;
+
+        sort_by_year(db, first, j - 1);
+        sort_by_year(db, j + 1, last);
+    }
+    return db;
+}
+
+
+
+Database* sort_by_price(Database* db, int first, int last)
+{
+
+    Address temp;
+    int pivot, j, i;
+
+    if (first < last) {
+        pivot = first;
+        i = first;
+        j = last;
+
+        while (i < j) {
+            while (
+                db->rows[i].car_price <= db->rows[pivot].car_price && i < last) {
+                i++;
+            }
+            while (db->rows[j].car_price > db->rows[pivot].car_price) {
+                j--;
+            }
+            if (i < j) {
+                temp = db->rows[i];
+                db->rows[i] = db->rows[j];
+                db->rows[j] = temp;
+            }
+        }
+
+        temp = db->rows[pivot];
+        db->rows[pivot] = db->rows[j];
+        db->rows[j] = temp;
+
+        sort_by_price(db, first, j - 1);
+        sort_by_price(db, j + 1, last);
+    }
+    return db;
+}
+
+
+
+void perform_action(int action, Database* db) {
     int field; 
     int type;
     char* value;
@@ -212,7 +297,24 @@ void perform_action(int action) {
 
             type = get_num_interval("(Enter a number) > ", "Such option does not exist", 1, 2);
 
-            /*sort_data(choice, type);*/
+            int reverse = (type == 1) ? 0 : 1;
+
+            Database* temp_db = malloc(sizeof(Database));
+            memcpy(&(temp_db->rows), &(db->rows), sizeof(db->rows));
+
+            switch(field) {
+                case 1:
+                    break;
+                case 2:
+                    break;
+                case 3:
+                    sort_by_year(temp_db, 0, 99);
+                    break;
+                case 4:
+                    sort_by_price(temp_db, 0, 99);
+                    break;
+            }
+            database_list(temp_db, reverse);
             break;
     }
 
@@ -302,8 +404,9 @@ set and delete operations\nrequire ID parameter.\nExamples: (1) get 1 (get 1st e
                 printf("(1) Filter\n");
                 printf("(2) Sort\n");
 
+                Database *db = conn->db;
                 action = get_num_interval("(Enter a number) > ", "Such option does not exist", 1, 2);
-                perform_action(action);
+                perform_action(action, db);
                 break;
             case 'g':
                 database_get(conn, id);
@@ -335,7 +438,7 @@ set and delete operations\nrequire ID parameter.\nExamples: (1) get 1 (get 1st e
                 database_write(conn);
                 break;
             case 'l':
-                database_list(conn);
+                database_list(conn->db, 0);
                 break;
             case 'c':
                 database_clear(conn);
@@ -609,20 +712,29 @@ void database_get(Connection *conn, int id) {
     }
 }
 
-void database_list(Connection *conn) {
+void database_list(Database *db, int reverse) {
     int i = 0;
     int count = 0;
-
-    Database *db = conn->db;
 
     printf("__________________________________________________________________________________________\n");
     printf("| ID |            Make              |            Model             |   Year   |   Price  |\n");
     printf("|_ __|______________________________|______________________________|__________|__________|\n");
-    for (i = 0; i < MAX_ROWS; i++) {
-        Address *cur = &db->rows[i];
-        if (cur->set) {
-            count += 1;
-            address_print(cur);
+
+    if (!reverse) {
+        for (i = 0; i < MAX_ROWS; i++) {
+            Address *cur = &db->rows[i];
+            if (cur->set) {
+                count += 1;
+                address_print(cur);
+            }
+        }
+    } else {
+        for (i = MAX_ROWS - 1; i >= 0; i--) {
+            Address *cur = &db->rows[i];
+            if (cur->set) {
+                count += 1;
+                address_print(cur);
+            }
         }
     }
 
