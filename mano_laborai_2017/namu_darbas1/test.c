@@ -15,8 +15,19 @@
  +-----------------------------------------------------------------------------
  |
  |  Description:  A car database program, where one can perform get, list, 
- |                create, edit and delete operations. The database is loaded
- |                from and saved to the binary file. 
+ |                create, edit, delete and clear operations. There are four fields
+ | 				  for each car entry: (1) Make (2) Model (3) Year (4) Price. The 
+ | 			      database is loaded from and saved to the binary file. The user
+ | 				  can also perform sorting (ascending, descending) actions by each
+ | 			      of the four fields, and also filtering by each field. There are 
+ | 			      four filtering options: (1) Value is equal (2) Value contains 
+ | 				  (3) Value is not equal (4) Value does not contain. After sorting
+ | 			      or filtering, the changed database output is displayed to the 
+ | 			      screen, however, is not written to the database, hence the order 
+ | 				  remains the same before sort or filter action. Each time the 
+ | 				  program runs, the log entry is created in ./log.txt file, with
+ | 				  the info about the beginning of the program and how much time did
+ | 				  it run.
  |
  |  Constraints:  
  |                
@@ -27,10 +38,14 @@
  |
  |  Known bugs:   
  |                
- |       TODOS:   
+ |       TODOS:   (1) Move sorting, filtering, and binary file processing 
+ | 				  functions to separate modules. 
+ | 				  (2) Use dynamic memory instead of static for data types.
+ | 				  (3) Implement logging to a file (./log.txt)
+ | 				  (4) Add unit tests
  |
  | Version
- | updates:     Currently this is the intial version
+ | updates:       Version 1.4 
  |
  +===========================================================================*/
 
@@ -42,6 +57,9 @@
 #include <errno.h>
 
 #include "dbg.h"
+/*#include "binary_file.h"*/
+/*#include "sorting.h"*/
+/*#include "filter.h"*/
 #include "lib_riddle.h"
 
 #define MAX_ID 100
@@ -893,32 +911,32 @@ void get_car(Car *car) {
 }
 
 Connection *database_open(const char* filename) {
-    Connection *conn = malloc(sizeof(Connection));
-    if(!conn) die("Memory error");
+	Connection *conn = malloc(sizeof(Connection));
+	if(!conn) die("Memory error");
 
-    conn->db = malloc(sizeof(Database));
-    if(!conn->db) die("Memory error");
+	conn->db = malloc(sizeof(Database));
+	if(!conn->db) die("Memory error");
 
-    conn->file = fopen(filename, "r+");
+	conn->file = fopen(filename, "r+");
 
-    if(conn->file) {
-        // load databae from file
-        int rc = fread(conn->db, sizeof(Database), 1, conn->file);
+	if(conn->file) {
+		// load databae from file
+		int rc = fread(conn->db, sizeof(Database), 1, conn->file);
 
-        // if database is loaded unsucessfully
-        if (rc != 1) {
-            printf("Failed to load database\n");
-            if (choice("Would you like to create a new one?\n")) {
-                conn->file = fopen(filename, "w");
-                database_create(conn);
-                database_write(conn);
-            }
-        }
-    }
+		// if database is loaded unsucessfully
+		if (rc != 1) {
+			printf("Failed to load database\n");
+			if (choice("Would you like to create a new one?\n")) {
+				conn->file = fopen(filename, "w");
+				database_create(conn);
+				database_write(conn);
+			}
+		}
+	}
 
-    if (!conn->file) die("Failed to open the file");
+	if (!conn->file) die("Failed to open the file");
 
-    return conn;
+	return conn;
 }
 
 void database_create(Connection *conn) {
@@ -933,13 +951,13 @@ void database_create(Connection *conn) {
 }
 
 void database_write(Connection *conn) {
-    rewind(conn->file);
+	rewind(conn->file);
 
-    int rc = fwrite(conn->db, sizeof(Database), 1, conn->file);
-    if (rc != 1) die("Failed to write database");
+	int rc = fwrite(conn->db, sizeof(Database), 1, conn->file);
+	if (rc != 1) die("Failed to write database");
 
-    rc = fflush(conn->file);
-    if (rc == -1) die("Cannot flush database");
+	rc = fflush(conn->file);
+	if (rc == -1) die("Cannot flush database");
 }
 
 void database_set(Connection* conn, int id, Car *car) { 
@@ -1049,11 +1067,11 @@ void database_clear(Connection *conn) {
 }
 
 void database_close(Connection *conn) {
-    if (conn) {
-        if (conn->file) fclose(conn->file);
-        if (conn->db) free(conn->db);
-        free(conn);
-    }
+	if (conn) {
+		if (conn->file) fclose(conn->file);
+		if (conn->db) free(conn->db);
+		free(conn);
+	}
 }
 
 
