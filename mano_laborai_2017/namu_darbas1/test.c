@@ -55,6 +55,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
+#include <math.h>
 
 #include "dbg.h"
 /*#include "binary_file.h"*/
@@ -69,6 +70,7 @@
 #define MAX_PARAMS 2
 #define LATEST_YEAR 2018
 #define EARLIEST_YEAR 1920
+#define CHUNK_SIZE 10
 
 // car (make, model, year of making, car price)
 typedef struct {
@@ -90,8 +92,18 @@ typedef struct {
 
 // database
 typedef struct {
-    Address rows[MAX_ROWS];
+    Address** rows;
+    int size;
+    int capacity;
 } Database;
+
+
+// static database
+typedef struct {
+    Address rows[MAX_ROWS];
+    /*int size;*/
+} StaticDatabase;
+
 
 // input structure
 typedef struct {
@@ -104,7 +116,7 @@ typedef struct {
 // has a pointer to file and a pointer to database
 typedef struct {
     FILE *file;
-    Database *db;
+    StaticDatabase *db;
 } Connection;
 
 // ::params: input - input structure is modified
@@ -151,7 +163,7 @@ void database_write(Connection *conn);
 // ::params: db - Database
 // ::params: id - entry id (user input)
 // ::params: car - car struct
-void database_set(Connection* conn, int id, Car *car);
+void database_set(StaticDatabase* db, int id, Car *car);
 
 // get address from database
 //
@@ -164,7 +176,7 @@ void database_get(Connection *conn, int id);
 // ::params: db - Database
 // ::params: reverse - whether to print in 
 // reverse order (used in sorting)
-void database_list(Database *db, int reverse);
+void database_list(StaticDatabase* db, int reverse);
 
 // print address from database
 //
@@ -175,7 +187,7 @@ void address_print(Address *addr);
 //
 // ::params: conn - Connection struct
 // ::params: id - entry id (user input)
-void database_delete(Connection *conn, int id);
+void database_delete(Connection* conn, int id);
 
 
 // clear database
@@ -190,330 +202,359 @@ void database_clear(Connection *conn);
 void database_close(Connection *conn);
 
 
-void filter_by_make(Database* db, int type, char* value) {
-
-    switch(type) {
-        case 1:
-            for (int i = 0; i < MAX_ROWS; i++) {
-                Address *cur = &db->rows[i];
-                if (cur->set) {
-                    if (strcmp(cur->car_make, value) != 0) {
-                        cur->set = 0;
-                    } 
-                }
-            }
-            break;
-        case 2:
-            for (int i = 0; i < MAX_ROWS; i++) {
-                Address *cur = &db->rows[i];
-                if (cur->set) {
-                    if (strstr(cur->car_make, value) == NULL) {
-                        cur->set = 0;
-                    } 
-                }
-            }
-            break;
-        case 3:
-            for (int i = 0; i < MAX_ROWS; i++) {
-                Address *cur = &db->rows[i];
-                if (cur->set) {
-                    if (strcmp(cur->car_make, value) == 0) {
-                        cur->set = 0;
-                    } 
-                }
-            }
-            break;
-        case 4:
-            for (int i = 0; i < MAX_ROWS; i++) {
-                Address *cur = &db->rows[i];
-                if (cur->set) {
-                    if (strstr(cur->car_make, value) != NULL) {
-                        cur->set = 0;
-                    } 
-                }
-            }
-            break;
-    }
-}
-
-void filter_by_model(Database* db, int type, char* value) {
-
-    switch(type) {
-        case 1:
-            for (int i = 0; i < MAX_ROWS; i++) {
-                Address *cur = &db->rows[i];
-                if (cur->set) {
-                    if (strcmp(cur->car_model, value) != 0) {
-                        cur->set = 0;
-                    } 
-                }
-            }
-            break;
-        case 2:
-            for (int i = 0; i < MAX_ROWS; i++) {
-                Address *cur = &db->rows[i];
-                if (cur->set) {
-                    if (strstr(cur->car_model, value) == NULL) {
-                        cur->set = 0;
-                    } 
-                }
-            }
-            break;
-        case 3:
-            for (int i = 0; i < MAX_ROWS; i++) {
-                Address *cur = &db->rows[i];
-                if (cur->set) {
-                    if (strcmp(cur->car_model, value) == 0) {
-                        cur->set = 0;
-                    } 
-                }
-            }
-            break;
-        case 4:
-            for (int i = 0; i < MAX_ROWS; i++) {
-                Address *cur = &db->rows[i];
-                if (cur->set) {
-                    if (strstr(cur->car_model, value) != NULL) {
-                        cur->set = 0;
-                    } 
-                }
-            }
-            break;
-    }
-}
 
 
-void filter_by_year(Database* db, int type, char* value) {
+/*Database* deserialize(Connection* conn) {*/
 
-    char year_string[MAX_TEXT_LENGTH];
+    /*[>int size = conn->db->size;<]*/
+    /*int size = 6;*/
+    /*int times = floor((size / CHUNK_SIZE) + 0.5);*/
 
-    switch(type) {
-        case 1:
-            for (int i = 0; i < MAX_ROWS; i++) {
-                Address *cur = &db->rows[i];
-                if (cur->set) {
-                    sprintf(year_string, "%d", cur->car_year);
-                    if (strcmp(year_string, value) != 0) {
-                        cur->set = 0;
-                    } 
-                }
-            }
-            break;
-        case 2:
-            for (int i = 0; i < MAX_ROWS; i++) {
-                Address *cur = &db->rows[i];
-                if (cur->set) {
-                    sprintf(year_string, "%d", cur->car_year);
-                    if (strstr(year_string, value) == NULL) {
-                        cur->set = 0;
-                    } 
-                }
-            }
-            break;
-        case 3:
-            for (int i = 0; i < MAX_ROWS; i++) {
-                Address *cur = &db->rows[i];
-                if (cur->set) {
-                    sprintf(year_string, "%d", cur->car_year);
-                    if (strcmp(year_string, value) == 0) {
-                        cur->set = 0;
-                    } 
-                }
-            }
-            break;
-        case 4:
-            for (int i = 0; i < MAX_ROWS; i++) {
-                Address *cur = &db->rows[i];
-                if (cur->set) {
-                    sprintf(year_string, "%d", cur->car_year);
-                    if (strstr(year_string, value) != NULL) {
-                        cur->set = 0;
-                    } 
-                }
-            }
-            break;
-    }
-}
+    /*Database* db = malloc(sizeof(Database));*/
+    /*db->capacity = CHUNK_SIZE * times;*/
+    /*// FIXME ar geras sizeof adress?*/
+    /*db->rows = malloc(db->capacity * sizeof(Address*));*/
+    /*db->size = 0;*/
 
-
-void filter_by_price(Database* db, int type, char* value) {
-
-    char price_string[MAX_TEXT_LENGTH];
-
-    switch(type) {
-        case 1:
-            for (int i = 0; i < MAX_ROWS; i++) {
-                Address *cur = &db->rows[i];
-                if (cur->set) {
-                    sprintf(price_string, "%d", cur->car_price);
-                    if (strcmp(price_string, value) != 0) {
-                        cur->set = 0;
-                    } 
-                }
-            }
-            break;
-        case 2:
-            for (int i = 0; i < MAX_ROWS; i++) {
-                Address *cur = &db->rows[i];
-                if (cur->set) {
-                    sprintf(price_string, "%d", cur->car_price);
-                    if (strstr(price_string, value) == NULL) {
-                        cur->set = 0;
-                    } 
-                }
-            }
-            break;
-        case 3:
-            for (int i = 0; i < MAX_ROWS; i++) {
-                Address *cur = &db->rows[i];
-                if (cur->set) {
-                    sprintf(price_string, "%d", cur->car_price);
-                    if (strcmp(price_string, value) == 0) {
-                        cur->set = 0;
-                    } 
-                }
-            }
-            break;
-        case 4:
-            for (int i = 0; i < MAX_ROWS; i++) {
-                Address *cur = &db->rows[i];
-                if (cur->set) {
-                    sprintf(price_string, "%d", cur->car_price);
-                    if (strstr(price_string, value) != NULL) {
-                        cur->set = 0;
-                    } 
-                }
-            }
-            break;
-    }
-}
+    /*for (int i = 0; i < size; i++) {*/
+        /*Address *cur = &conn->db->rows[i];*/
+            /*if (cur->set) {*/
+                /*debug("car make %s", cur->car_make);*/
+                /*db->rows[db->size++] = cur;*/
+            /*}*/
+    /*}*/
+    /*return db;*/
+/*}*/
 
 
 
 
 
 
+/*void filter_by_make(Database* db, int type, char* value) {*/
+
+    /*switch(type) {*/
+        /*case 1:*/
+            /*for (int i = 0; i < MAX_ROWS; i++) {*/
+                /*Address *cur = &db->rows[i];*/
+                /*if (cur->set) {*/
+                    /*if (strcmp(cur->car_make, value) != 0) {*/
+                        /*cur->set = 0;*/
+                    /*} */
+                /*}*/
+            /*}*/
+            /*break;*/
+        /*case 2:*/
+            /*for (int i = 0; i < MAX_ROWS; i++) {*/
+                /*Address *cur = &db->rows[i];*/
+                /*if (cur->set) {*/
+                    /*if (strstr(cur->car_make, value) == NULL) {*/
+                        /*cur->set = 0;*/
+                    /*} */
+                /*}*/
+            /*}*/
+            /*break;*/
+        /*case 3:*/
+            /*for (int i = 0; i < MAX_ROWS; i++) {*/
+                /*Address *cur = &db->rows[i];*/
+                /*if (cur->set) {*/
+                    /*if (strcmp(cur->car_make, value) == 0) {*/
+                        /*cur->set = 0;*/
+                    /*} */
+                /*}*/
+            /*}*/
+            /*break;*/
+        /*case 4:*/
+            /*for (int i = 0; i < MAX_ROWS; i++) {*/
+                /*Address *cur = &db->rows[i];*/
+                /*if (cur->set) {*/
+                    /*if (strstr(cur->car_make, value) != NULL) {*/
+                        /*cur->set = 0;*/
+                    /*} */
+                /*}*/
+            /*}*/
+            /*break;*/
+    /*}*/
+/*}*/
+
+/*void filter_by_model(Database* db, int type, char* value) {*/
+
+    /*switch(type) {*/
+        /*case 1:*/
+            /*for (int i = 0; i < MAX_ROWS; i++) {*/
+                /*Address *cur = &db->rows[i];*/
+                /*if (cur->set) {*/
+                    /*if (strcmp(cur->car_model, value) != 0) {*/
+                        /*cur->set = 0;*/
+                    /*} */
+                /*}*/
+            /*}*/
+            /*break;*/
+        /*case 2:*/
+            /*for (int i = 0; i < MAX_ROWS; i++) {*/
+                /*Address *cur = &db->rows[i];*/
+                /*if (cur->set) {*/
+                    /*if (strstr(cur->car_model, value) == NULL) {*/
+                        /*cur->set = 0;*/
+                    /*} */
+                /*}*/
+            /*}*/
+            /*break;*/
+        /*case 3:*/
+            /*for (int i = 0; i < MAX_ROWS; i++) {*/
+                /*Address *cur = &db->rows[i];*/
+                /*if (cur->set) {*/
+                    /*if (strcmp(cur->car_model, value) == 0) {*/
+                        /*cur->set = 0;*/
+                    /*} */
+                /*}*/
+            /*}*/
+            /*break;*/
+        /*case 4:*/
+            /*for (int i = 0; i < MAX_ROWS; i++) {*/
+                /*Address *cur = &db->rows[i];*/
+                /*if (cur->set) {*/
+                    /*if (strstr(cur->car_model, value) != NULL) {*/
+                        /*cur->set = 0;*/
+                    /*} */
+                /*}*/
+            /*}*/
+            /*break;*/
+    /*}*/
+/*}*/
 
 
-Database* sort_lex_by_make(Database* db, int first, int last)
-{
+/*void filter_by_year(Database* db, int type, char* value) {*/
 
-    int i, j;
-    Address temp;
+    /*char year_string[MAX_TEXT_LENGTH];*/
 
-    for (i = first; i < last; ++i)
-
-        for (j = i + 1; j < last + 1; ++j) {
-
-            if (strcmp(db->rows[i].car_make, db->rows[j].car_make) > 0) {
-                temp = db->rows[i];
-                db->rows[i] = db->rows[j];
-                db->rows[j] = temp;
-            }
-        }
-
-    return db;
-}
-
-
-Database* sort_lex_by_model(Database* db, int first, int last)
-{
-
-    int i, j;
-    Address temp;
-
-    for (i = first; i < last; ++i)
-
-        for (j = i + 1; j < last + 1; ++j) {
-
-            if (strcmp(db->rows[i].car_model, db->rows[j].car_model) > 0) {
-                temp = db->rows[i];
-                db->rows[i] = db->rows[j];
-                db->rows[j] = temp;
-            }
-        }
-
-    return db;
-}
-
-Database* sort_by_year(Database* db, int first, int last)
-{
-
-    Address temp;
-    int pivot, j, i;
-
-    if (first < last) {
-        pivot = first;
-        i = first;
-        j = last;
-
-        while (i < j) {
-            while (
-                db->rows[i].car_year <= db->rows[pivot].car_year && i < last) {
-                i++;
-            }
-            while (db->rows[j].car_year > db->rows[pivot].car_year) {
-                j--;
-            }
-            if (i < j) {
-                temp = db->rows[i];
-                db->rows[i] = db->rows[j];
-                db->rows[j] = temp;
-            }
-        }
-
-        temp = db->rows[pivot];
-        db->rows[pivot] = db->rows[j];
-        db->rows[j] = temp;
-
-        sort_by_year(db, first, j - 1);
-        sort_by_year(db, j + 1, last);
-    }
-    return db;
-}
-
-Database* sort_by_price(Database* db, int first, int last)
-{
-
-    Address temp;
-    int pivot, j, i;
-
-    if (first < last) {
-        pivot = first;
-        i = first;
-        j = last;
-
-        while (i < j) {
-            while (
-                db->rows[i].car_price <= db->rows[pivot].car_price && i < last) {
-                i++;
-            }
-            while (db->rows[j].car_price > db->rows[pivot].car_price) {
-                j--;
-            }
-            if (i < j) {
-                temp = db->rows[i];
-                db->rows[i] = db->rows[j];
-                db->rows[j] = temp;
-            }
-        }
-
-        temp = db->rows[pivot];
-        db->rows[pivot] = db->rows[j];
-        db->rows[j] = temp;
-
-        sort_by_price(db, first, j - 1);
-        sort_by_price(db, j + 1, last);
-    }
-    return db;
-}
+    /*switch(type) {*/
+        /*case 1:*/
+            /*for (int i = 0; i < MAX_ROWS; i++) {*/
+                /*Address *cur = &db->rows[i];*/
+                /*if (cur->set) {*/
+                    /*sprintf(year_string, "%d", cur->car_year);*/
+                    /*if (strcmp(year_string, value) != 0) {*/
+                        /*cur->set = 0;*/
+                    /*} */
+                /*}*/
+            /*}*/
+            /*break;*/
+        /*case 2:*/
+            /*for (int i = 0; i < MAX_ROWS; i++) {*/
+                /*Address *cur = &db->rows[i];*/
+                /*if (cur->set) {*/
+                    /*sprintf(year_string, "%d", cur->car_year);*/
+                    /*if (strstr(year_string, value) == NULL) {*/
+                        /*cur->set = 0;*/
+                    /*} */
+                /*}*/
+            /*}*/
+            /*break;*/
+        /*case 3:*/
+            /*for (int i = 0; i < MAX_ROWS; i++) {*/
+                /*Address *cur = &db->rows[i];*/
+                /*if (cur->set) {*/
+                    /*sprintf(year_string, "%d", cur->car_year);*/
+                    /*if (strcmp(year_string, value) == 0) {*/
+                        /*cur->set = 0;*/
+                    /*} */
+                /*}*/
+            /*}*/
+            /*break;*/
+        /*case 4:*/
+            /*for (int i = 0; i < MAX_ROWS; i++) {*/
+                /*Address *cur = &db->rows[i];*/
+                /*if (cur->set) {*/
+                    /*sprintf(year_string, "%d", cur->car_year);*/
+                    /*if (strstr(year_string, value) != NULL) {*/
+                        /*cur->set = 0;*/
+                    /*} */
+                /*}*/
+            /*}*/
+            /*break;*/
+    /*}*/
+/*}*/
 
 
-void perform_action(int action, Database* db) {
+/*void filter_by_price(Database* db, int type, char* value) {*/
+
+    /*char price_string[MAX_TEXT_LENGTH];*/
+
+    /*switch(type) {*/
+        /*case 1:*/
+            /*for (int i = 0; i < MAX_ROWS; i++) {*/
+                /*Address *cur = &db->rows[i];*/
+                /*if (cur->set) {*/
+                    /*sprintf(price_string, "%d", cur->car_price);*/
+                    /*if (strcmp(price_string, value) != 0) {*/
+                        /*cur->set = 0;*/
+                    /*} */
+                /*}*/
+            /*}*/
+            /*break;*/
+        /*case 2:*/
+            /*for (int i = 0; i < MAX_ROWS; i++) {*/
+                /*Address *cur = &db->rows[i];*/
+                /*if (cur->set) {*/
+                    /*sprintf(price_string, "%d", cur->car_price);*/
+                    /*if (strstr(price_string, value) == NULL) {*/
+                        /*cur->set = 0;*/
+                    /*} */
+                /*}*/
+            /*}*/
+            /*break;*/
+        /*case 3:*/
+            /*for (int i = 0; i < MAX_ROWS; i++) {*/
+                /*Address *cur = &db->rows[i];*/
+                /*if (cur->set) {*/
+                    /*sprintf(price_string, "%d", cur->car_price);*/
+                    /*if (strcmp(price_string, value) == 0) {*/
+                        /*cur->set = 0;*/
+                    /*} */
+                /*}*/
+            /*}*/
+            /*break;*/
+        /*case 4:*/
+            /*for (int i = 0; i < MAX_ROWS; i++) {*/
+                /*Address *cur = &db->rows[i];*/
+                /*if (cur->set) {*/
+                    /*sprintf(price_string, "%d", cur->car_price);*/
+                    /*if (strstr(price_string, value) != NULL) {*/
+                        /*cur->set = 0;*/
+                    /*} */
+                /*}*/
+            /*}*/
+            /*break;*/
+    /*}*/
+/*}*/
+
+
+
+
+
+
+
+
+/*Database* sort_lex_by_make(Database* db, int first, int last)*/
+/*{*/
+
+    /*int i, j;*/
+    /*Address temp;*/
+
+    /*for (i = first; i < last; ++i)*/
+
+        /*for (j = i + 1; j < last + 1; ++j) {*/
+
+            /*if (strcmp(db->rows[i].car_make, db->rows[j].car_make) > 0) {*/
+                /*temp = db->rows[i];*/
+                /*db->rows[i] = db->rows[j];*/
+                /*db->rows[j] = temp;*/
+            /*}*/
+        /*}*/
+
+    /*return db;*/
+/*}*/
+
+
+/*Database* sort_lex_by_model(Database* db, int first, int last)*/
+/*{*/
+
+    /*int i, j;*/
+    /*Address temp;*/
+
+    /*for (i = first; i < last; ++i)*/
+
+        /*for (j = i + 1; j < last + 1; ++j) {*/
+
+            /*if (strcmp(db->rows[i].car_model, db->rows[j].car_model) > 0) {*/
+                /*temp = db->rows[i];*/
+                /*db->rows[i] = db->rows[j];*/
+                /*db->rows[j] = temp;*/
+            /*}*/
+        /*}*/
+
+    /*return db;*/
+/*}*/
+
+/*Database* sort_by_year(Database* db, int first, int last)*/
+/*{*/
+
+    /*Address temp;*/
+    /*int pivot, j, i;*/
+
+    /*if (first < last) {*/
+        /*pivot = first;*/
+        /*i = first;*/
+        /*j = last;*/
+
+        /*while (i < j) {*/
+            /*while (*/
+                /*db->rows[i].car_year <= db->rows[pivot].car_year && i < last) {*/
+                /*i++;*/
+            /*}*/
+            /*while (db->rows[j].car_year > db->rows[pivot].car_year) {*/
+                /*j--;*/
+            /*}*/
+            /*if (i < j) {*/
+                /*temp = db->rows[i];*/
+                /*db->rows[i] = db->rows[j];*/
+                /*db->rows[j] = temp;*/
+            /*}*/
+        /*}*/
+
+        /*temp = db->rows[pivot];*/
+        /*db->rows[pivot] = db->rows[j];*/
+        /*db->rows[j] = temp;*/
+
+        /*sort_by_year(db, first, j - 1);*/
+        /*sort_by_year(db, j + 1, last);*/
+    /*}*/
+    /*return db;*/
+/*}*/
+
+/*Database* sort_by_price(Database* db, int first, int last)*/
+/*{*/
+
+    /*Address temp;*/
+    /*int pivot, j, i;*/
+
+    /*if (first < last) {*/
+        /*pivot = first;*/
+        /*i = first;*/
+        /*j = last;*/
+
+        /*while (i < j) {*/
+            /*while (*/
+                /*db->rows[i].car_price <= db->rows[pivot].car_price && i < last) {*/
+                /*i++;*/
+            /*}*/
+            /*while (db->rows[j].car_price > db->rows[pivot].car_price) {*/
+                /*j--;*/
+            /*}*/
+            /*if (i < j) {*/
+                /*temp = db->rows[i];*/
+                /*db->rows[i] = db->rows[j];*/
+                /*db->rows[j] = temp;*/
+            /*}*/
+        /*}*/
+
+        /*temp = db->rows[pivot];*/
+        /*db->rows[pivot] = db->rows[j];*/
+        /*db->rows[j] = temp;*/
+
+        /*sort_by_price(db, first, j - 1);*/
+        /*sort_by_price(db, j + 1, last);*/
+    /*}*/
+    /*return db;*/
+/*}*/
+
+
+void perform_action(int action, StaticDatabase* db) {
     int field; 
     int type;
     char* value;
-    Database* temp_db;
+    StaticDatabase* temp_db;
 
     switch(action) {
         case 1:
@@ -540,21 +581,21 @@ void perform_action(int action, Database* db) {
             temp_db = malloc(sizeof(Database));
             memcpy(&(temp_db->rows), &(db->rows), sizeof(db->rows));
 
-            switch(field) {
-                case 1:
-                    filter_by_make(temp_db, type, value);
-                    break;
-                case 2:
-                    filter_by_model(temp_db, type, value);
-                    break;
-                case 3:
-                    filter_by_year(temp_db, type, value);
-                    break;
-                case 4:
-                    filter_by_price(temp_db, type, value);
-                    break;
-            }
-            database_list(temp_db, 0);
+            /*switch(field) {*/
+                /*case 1:*/
+                    /*filter_by_make(temp_db, type, value);*/
+                    /*break;*/
+                /*case 2:*/
+                    /*filter_by_model(temp_db, type, value);*/
+                    /*break;*/
+                /*case 3:*/
+                    /*filter_by_year(temp_db, type, value);*/
+                    /*break;*/
+                /*case 4:*/
+                    /*filter_by_price(temp_db, type, value);*/
+                    /*break;*/
+     /*       }*/
+			database_list(temp_db, 0);
             break;
 
         case 2:
@@ -577,20 +618,20 @@ void perform_action(int action, Database* db) {
             temp_db = malloc(sizeof(Database));
             memcpy(&(temp_db->rows), &(db->rows), sizeof(db->rows));
 
-            switch(field) {
-                case 1:
-                    sort_lex_by_make(temp_db, 0, 99);
-                    break;
-                case 2:
-                    sort_lex_by_model(temp_db, 0, 99);
-                    break;
-                case 3:
-                    sort_by_year(temp_db, 0, 99);
-                    break;
-                case 4:
-                    sort_by_price(temp_db, 0, 99);
-                    break;
-            }
+/*            switch(field) {*/
+                /*case 1:*/
+                    /*sort_lex_by_make(temp_db, 0, 99);*/
+                    /*break;*/
+                /*case 2:*/
+                    /*sort_lex_by_model(temp_db, 0, 99);*/
+                    /*break;*/
+                /*case 3:*/
+                    /*sort_by_year(temp_db, 0, 99);*/
+                    /*break;*/
+                /*case 4:*/
+                    /*sort_by_price(temp_db, 0, 99);*/
+                    /*break;*/
+/*            }*/
             database_list(temp_db, reverse);
             break;
     }
@@ -603,6 +644,8 @@ int main(int argc, char *argv[]) {
 
     char* filename = argv[1];
     Connection* conn = database_open(filename);
+    /*Database* db = deserialize(conn);*/
+    /*debug("DB: %d", db->size);*/
     /*int id = 0;*/
 
     char* about = "This is a car database program, where one can perform get, list, create, edit and delete "
@@ -621,6 +664,8 @@ set and delete operations\nrequire ID parameter.\nExamples: (1) get 1 (get 1st e
 
     // id for database entries
     int id;
+
+    
 
     /*// initialize input variable*/
     Input* input = (Input*) malloc(sizeof(Input));
@@ -681,7 +726,7 @@ set and delete operations\nrequire ID parameter.\nExamples: (1) get 1 (get 1st e
                 printf("(1) Filter\n");
                 printf("(2) Sort\n");
 
-                Database *db = conn->db;
+                StaticDatabase *db = conn->db;
                 action = get_num_interval("(Enter a number) > ", "Such option does not exist", 1, 2);
                 perform_action(action, db);
                 break;
@@ -689,25 +734,37 @@ set and delete operations\nrequire ID parameter.\nExamples: (1) get 1 (get 1st e
                 database_get(conn, id);
                 break;
             case 's':; // An empty statement before a label
-                Address *addr = &conn->db->rows[id];
-                if (addr->set) {
-                    printf("Such entry already exists:\n");
-                    database_get(conn, id);
-                    if (choice("Would you like to change it?")) {
-                        database_delete(conn, id);
-                        database_write(conn);
-                    } else {
-                        break;
+                /*Address *addr = &conn->db->rows[db->size];*/
+                /*debug("HERE");*/
+                /*debug("%d", db->size);*/
+
+                /*for (int i = 0; i < db->size; i++) {*/
+				for (int i = 0; i < MAX_ROWS; i++) {
+                    Address *cur = &conn->db->rows[i];
+                    if (cur->id == id) {
+
+                        if (cur->set) {
+                            printf("Such entry already exists:\n");
+                            database_get(conn, id);
+                            if (choice("Would you like to change it?")) {
+                                database_delete(conn, id);
+                                database_write(conn);
+                            } else {
+                                break;
+                            }
+                        }
                     }
                 }
+
+				debug("Here now");
 
                 Car *car = malloc(sizeof(Car));
                 if (car == NULL) die("Memory error");
                 get_car(car);
 
                 if (choice("Would you like to save?")) {
-                    database_set(conn, id, car);
-                    database_write(conn);
+                    database_set(conn->db, id, car);
+					database_write(conn);
                 }
                 break;
             case 'd':
@@ -715,7 +772,7 @@ set and delete operations\nrequire ID parameter.\nExamples: (1) get 1 (get 1st e
                 database_write(conn);
                 break;
             case 'l':
-                database_list(conn->db, 0);
+				database_list(conn->db, 0);
                 break;
             case 'c':
                 database_clear(conn);
@@ -910,26 +967,33 @@ void get_car(Car *car) {
 
 }
 
+
+
+
 Connection *database_open(const char* filename) {
 	Connection *conn = malloc(sizeof(Connection));
 	if(!conn) die("Memory error");
 
-	conn->db = malloc(sizeof(Database));
+    conn->db = malloc(sizeof(StaticDatabase));
+    /*conn->db->capacity = 10;*/
+    /*conn->db->size = 0;*/
+    /*conn->db->rows = malloc(10 * sizeof(Address*));*/
+
 	if(!conn->db) die("Memory error");
 
 	conn->file = fopen(filename, "r+");
 
 	if(conn->file) {
-		// load databae from file
-		int rc = fread(conn->db, sizeof(Database), 1, conn->file);
+		// load database from file
+		int rc = fread(conn->db, sizeof(StaticDatabase), 1, conn->file);
 
-		// if database is loaded unsucessfully
+		// if database is loaded unsuccessfully
 		if (rc != 1) {
 			printf("Failed to load database\n");
 			if (choice("Would you like to create a new one?\n")) {
 				conn->file = fopen(filename, "w");
-				database_create(conn);
-				database_write(conn);
+                database_create(conn);
+                database_write(conn);
 			}
 		}
 	}
@@ -941,8 +1005,7 @@ Connection *database_open(const char* filename) {
 
 void database_create(Connection *conn) {
 
-    int i = 0;
-    for (i = 0; i < MAX_ROWS; i++) {
+    for (int i = 0; i < MAX_ROWS; i++) {
         // make a prototype to initialize it
         Address addr = {.id = i, .set = 0};
         // then just assign it
@@ -953,17 +1016,19 @@ void database_create(Connection *conn) {
 void database_write(Connection *conn) {
 	rewind(conn->file);
 
-	int rc = fwrite(conn->db, sizeof(Database), 1, conn->file);
+	int rc = fwrite(conn->db, sizeof(StaticDatabase), 1, conn->file);
 	if (rc != 1) die("Failed to write database");
 
 	rc = fflush(conn->file);
 	if (rc == -1) die("Cannot flush database");
 }
 
-void database_set(Connection* conn, int id, Car *car) { 
-    Address *addr = &conn->db->rows[id];
+void database_set(StaticDatabase* db, int id, Car *car) { 
+    /*Address *addr = &(db->rows[db->size++]);*/
+	Address *addr = &db->rows[id];
 
-    /*addr->car = malloc(sizeof(Car));*/
+	debug("insdie");
+	/*addr->car = malloc(sizeof(Car));*/
 
     /*addr->car = car;*/
 
@@ -989,7 +1054,8 @@ void database_get(Connection *conn, int id) {
     }
 }
 
-void database_list(Database *db, int reverse) {
+
+void database_list(StaticDatabase* db, int reverse) {
     int i = 0;
     int count = 0;
 
@@ -997,9 +1063,18 @@ void database_list(Database *db, int reverse) {
     printf("| ID |            Make              |            Model             |   Year   |   Price  |\n");
     printf("|_ __|______________________________|______________________________|__________|__________|\n");
 
+    debug("HER");
+
+    /*Database *db = conn->db;*/
+
     if (!reverse) {
+        /*debug("reverse");*/
+        /*debug("d size %d", db->size);*/
+        /*for (i = 0; i < db->size; i++) {*/
         for (i = 0; i < MAX_ROWS; i++) {
+            /*debug("iter %d", i);*/
             Address *cur = &db->rows[i];
+            // FIXME nereikia ar is_set tikrinti
             if (cur->set) {
                 count += 1;
                 address_print(cur);
@@ -1014,6 +1089,7 @@ void database_list(Database *db, int reverse) {
             }
         }
     }
+    debug("HER NOW");
 
     if (count == 0) {
         printf("No entries.\n");
