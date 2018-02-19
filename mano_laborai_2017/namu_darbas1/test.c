@@ -112,12 +112,23 @@ typedef struct {
     char** params;
 } Input;
 
+
 // connection structure
 // has a pointer to file and a pointer to database
 typedef struct {
     FILE *file;
     StaticDatabase *db;
 } Connection;
+
+
+// connection structure
+// has a pointer to file and a pointer to database
+typedef struct {
+    FILE *file;
+    Database *db;
+} Connection2;
+
+
 
 // ::params: input - input structure is modified
 void get_input(Input* input);
@@ -137,6 +148,8 @@ void clear_input(Input* input);
 void get_car(Car *car);
 
 
+Connection2 *database_open2(const char* filename);
+
 // open database from file. If file does not
 // exist, return an error and exit. If database is failed
 // to load, prompt user to create a new database
@@ -146,12 +159,14 @@ void get_car(Car *car);
 Connection *database_open(const char* filename);
 
 
+void database_create2(Connection2* conn);
 // allocate space and create database
 // (initialize Address structs)
 //
 // ::params: conn - Connection struct
 void database_create(Connection* conn);
 
+void database_write2(Connection2 *conn);
 // write current state of database to a file
 //
 // ::params: conn - Connection struct
@@ -163,7 +178,7 @@ void database_write(Connection *conn);
 // ::params: db - Database
 // ::params: id - entry id (user input)
 // ::params: car - car struct
-void database_set(StaticDatabase* db, int id, Car *car);
+void database_set(Connection2* conn2, StaticDatabase* db, int id, Car *car);
 
 // get address from database
 //
@@ -643,7 +658,22 @@ int main(int argc, char *argv[]) {
     if (argc < 2) die ("USAGE: test <dbfile> <action> [action params]");
 
     char* filename = argv[1];
-    Connection* conn = database_open(filename);
+    Connection2* conn2 = database_open2(filename);
+    /*Connection* conn = database_open(filename);*/
+	Connection *conn = malloc(sizeof(Connection));
+    conn->db = malloc(sizeof(StaticDatabase));
+
+    for (int i = 0; i < conn2->db->size; i++) {
+        Address addr = {
+            .id = conn2->db->rows[i]->id,
+            .set = conn2->db->rows[i]->set,
+            .car_make = conn2->db->rows[i]->car_make,
+            .car_model = conn2->db->rows[i]->car_model,
+            .car_year = conn2->db->rows[i]->car_year,
+            .car_price = conn2->db->rows[i]->car_price
+        };
+        conn->db->rows[i] = addr;
+    }
     /*Database* db = deserialize(conn);*/
     /*debug("DB: %d", db->size);*/
     /*int id = 0;*/
@@ -763,8 +793,8 @@ set and delete operations\nrequire ID parameter.\nExamples: (1) get 1 (get 1st e
                 get_car(car);
 
                 if (choice("Would you like to save?")) {
-                    database_set(conn->db, id, car);
-					database_write(conn);
+                    database_set(conn2, conn->db, id, car);
+					database_write2(conn2);
                 }
                 break;
             case 'd':
@@ -967,6 +997,58 @@ void get_car(Car *car) {
 
 }
 
+Connection2 *database_open2(const char* filename) {
+	Connection2 *conn = malloc(sizeof(Connection2));
+	if(!conn) die("Memory error");
+
+    conn->db = malloc(sizeof(Database));
+    /*conn->db->capacity = 10;*/
+    /*conn->db->size = 0;*/
+    /*conn->db->rows = malloc(10 * sizeof(Address*));*/
+
+	if(!conn->db) die("Memory error");
+
+	conn->file = fopen(filename, "r+");
+
+	if(conn->file) {
+		// load database from file
+        debug("nu");
+
+        debug("db size: %d", conn->db->size);
+		int rc = fread(conn->db, sizeof(Database), 1, conn->file);
+        debug("nu2");
+
+
+        conn->db->rows = malloc(10 * sizeof(Address));
+
+        for (int i = 0; i < 10; i++) {
+            conn->db->rows[i] = malloc(sizeof(Address));
+        }
+        debug("db capa: %d", conn->db->capacity);
+        debug("db size: %d", conn->db->size);
+
+        for (int i = 0; i < conn->db->size; i++) {
+            rc = fread(conn->db->rows[i], sizeof(Address), 1, conn->file);
+        }
+        debug("nu3");
+
+		// if database is loaded unsuccessfully
+		if (rc != 1) {
+			printf("Failed to load database\n");
+			if (choice("Would you like to create a new one?\n")) {
+				conn->file = fopen(filename, "w");
+                database_create2(conn);
+                database_write2(conn);
+			}
+		}
+	}
+
+	if (!conn->file) die("Failed to open the file");
+
+	return conn;
+}
+
+
 
 
 
@@ -1003,6 +1085,20 @@ Connection *database_open(const char* filename) {
 	return conn;
 }
 
+
+void database_create2(Connection2 *conn) {
+
+    conn->db->capacity = 10;
+    conn->db->size = 0;
+    conn->db->rows = malloc(10 * sizeof(Address));
+
+    for (int i = 0; i < 10; i++) {
+        conn->db->rows[i] = malloc(sizeof(Address));
+    }
+}
+
+
+
 void database_create(Connection *conn) {
 
     for (int i = 0; i < MAX_ROWS; i++) {
@@ -1012,6 +1108,27 @@ void database_create(Connection *conn) {
         conn->db->rows[i] = addr;
     }
 }
+
+
+void database_write2(Connection2 *conn) {
+	rewind(conn->file);
+
+	int rc = fwrite(conn->db, sizeof(Database), 1, conn->file);
+	if (rc != 1) die("Failed to write database");
+
+    debug("db size: %d", conn->db->size);
+
+    for (int i = 0; i < conn->db->size; i++) {
+        rc = fwrite(conn->db->rows[i], sizeof(Address), 1, conn->file);
+    }
+
+	rc = fflush(conn->file);
+	if (rc == -1) die("Cannot flush database");
+}
+
+
+
+
 
 void database_write(Connection *conn) {
 	rewind(conn->file);
@@ -1023,7 +1140,7 @@ void database_write(Connection *conn) {
 	if (rc == -1) die("Cannot flush database");
 }
 
-void database_set(StaticDatabase* db, int id, Car *car) { 
+void database_set(Connection2* conn2, StaticDatabase* db, int id, Car *car) { 
     /*Address *addr = &(db->rows[db->size++]);*/
 	Address *addr = &db->rows[id];
 
@@ -1037,6 +1154,11 @@ void database_set(StaticDatabase* db, int id, Car *car) {
     addr->car_year = car->year;
     addr->car_price = car->price;
     addr->set = 1;
+
+    conn2->db->size += 1;
+    memcpy(conn2->db->rows[0], addr, sizeof(Address));
+    debug("po memcpy");
+    /*conn2->db->rows[0] = addr;*/
 
     printf("Successfully saved, ID = %d\n", id);
 }
