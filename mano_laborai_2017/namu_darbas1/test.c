@@ -40,9 +40,8 @@
  |                
  |       TODOS:   (1) Move sorting, filtering, and binary file processing 
  | 				  functions to separate modules. 
- | 				  (2) Use dynamic memory instead of static for data types.
- | 				  (3) Implement logging to a file (./log.txt)
- | 				  (4) Add unit tests
+ | 				  (2) Implement logging to a file (./log.txt)
+ | 				  (3) Add unit tests
  |
  | Version
  | updates:       Version 1.4 
@@ -63,13 +62,12 @@
 /*#include "filter.h"*/
 #include "lib_riddle.h"
 
-#define MAX_ID 100
 #define MAX_LINE 100
 #define MAX_TEXT_LENGTH 30
 #define MAX_PARAMS 2
 #define LATEST_YEAR 2018
 #define EARLIEST_YEAR 1920
-#define CHUNK_SIZE 10
+#define CHUNK_SIZE 3
 
 // car (make, model, year of making, car price)
 typedef struct {
@@ -83,8 +81,8 @@ typedef struct {
 typedef struct {
     int id;
     int set;
-    char car_make[10];
-    char car_model[10];
+    char car_make[MAX_TEXT_LENGTH];
+    char car_model[MAX_TEXT_LENGTH];
     int car_year;
     int car_price;
 } Address;
@@ -649,11 +647,10 @@ int main(int argc, char *argv[]) {
     char* about = "This is a car database program, where one can perform get, list, create, edit and delete "
             "operations. The database is loaded from and saved to the binary file. Version: v.0";
 
-    char* info = malloc(350 * sizeof(char*));
-    sprintf(info, "Usage: in the main shell, input the Action[1] and ID[2].\n\n[1] Action - g=get, l=list, \
-s=set, d=delete, c=clear database, q=quit, i=info.\n[2] ID - a positive integer not exceeding %d. Only get,\
-set and delete operations\nrequire ID parameter.\nExamples: (1) get 1 (get 1st element) (2) l (list elements)\
-(3) set 2 (set 2nd element)", MAX_ID);
+    char* info = "Usage: in the main shell, input the Action[1] and ID[2].\n\n[1] Action - g=get, l=list, "
+        "s=set, d=delete, c=clear database, q=quit, i=info.\n[2] ID - a positive integer. Only get, "
+        "set and delete operations require ID parameter.\nExamples: (1) get 1 (get 1st element) (2) l (list elements) "
+        "(3) set 2 (set 2nd element)";
 
     char* separator = "---------------------------------------------------";
 
@@ -733,6 +730,8 @@ set and delete operations\nrequire ID parameter.\nExamples: (1) get 1 (get 1st e
                 break;
             case 's':; // An empty statement before a label
                  debug("0");
+                int no_change = 0;
+
 				for (int i = 0; i < conn->db->size; i++) {
                     Address *cur = conn->db->rows[i];
                     debug("1");
@@ -746,11 +745,14 @@ set and delete operations\nrequire ID parameter.\nExamples: (1) get 1 (get 1st e
                                 database_delete(conn, id);
                                 database_write(conn);
                             } else {
+                                no_change = 1;
                                 break;
                             }
                         }
                     }
                 }
+                if (no_change)
+                    break;
 
 				debug("Here now");
 
@@ -778,15 +780,7 @@ set and delete operations\nrequire ID parameter.\nExamples: (1) get 1 (get 1st e
                 printf("%s\n\n", info);
                 break;
             case 'q':
-                for (int i = 0; i < db->size; i++) {
-                    Address *cur = conn->db->rows[i];
-                    if (cur->set) {
-                        /*free(cur->car->make);*/
-                        /*free(cur->car->model);*/
-                        /*free(cur->car);*/
-                    }
-                }
-                /*free(db);*/
+                // TODO add cleaning
                 database_close(conn);
                 /*free(info);*/
                 /*free(input->params);*/
@@ -897,8 +891,8 @@ int valid_input(Input* input) {
 
         // id being equal to 0 in condition
         // below also validates from char input
-        if (id <= 0 || id > MAX_ID) {
-            printf("ID should be a positive integer less or equal to 100.\n");
+        if (id <= 0) {
+            printf("ID should be a positive integer.\n");
             return 0;
         }
     }
@@ -1005,11 +999,11 @@ Connection *database_open(const char* filename) {
 
 void database_create(Connection *conn) {
 
-    conn->db->capacity = 10;
+    conn->db->capacity = CHUNK_SIZE;
     conn->db->size = 0;
-    conn->db->rows = malloc(10 * sizeof(Address));
+    conn->db->rows = malloc(conn->db->capacity * sizeof(Address));
 
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < conn->db->capacity; i++) {
         conn->db->rows[i] = malloc(sizeof(Address));
     }
 }
@@ -1032,13 +1026,12 @@ void database_write(Connection *conn) {
 }
 
 void database_set(Connection* conn, int id, Car *car) { 
-    /*Address *addr = &(db->rows[db->size++]);*/
-	/*Address *addr = &conn->db->rows[id];*/
-
-	debug("insdie");
-	/*addr->car = malloc(sizeof(Car));*/
-
-    /*addr->car = car;*/
+    if (conn->db->size == conn->db->capacity) {
+        conn->db->capacity += CHUNK_SIZE;
+        conn->db->rows = realloc(conn->db->rows, conn->db->capacity * sizeof(Address));
+    }
+   
+    debug("db capacity: %d", conn->db->capacity);
 
     strcpy(conn->db->rows[conn->db->size]->car_make, car->make);
     strcpy(conn->db->rows[conn->db->size]->car_model, car->model);
