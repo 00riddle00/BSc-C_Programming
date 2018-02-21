@@ -280,7 +280,7 @@ int main(int argc, char *argv[]) {
             case 's':; // An empty statement before a label
                 int no_change = 0;
 
-				for (int i = 0; i < conn->db->size; i++) {
+				for (int i = 0; i < conn->db->capacity; i++) {
                     Address *cur = conn->db->rows[i];
                     if (cur->id == id) {
                         printf("Such entry already exists:\n");
@@ -623,11 +623,13 @@ void exiting() {
 void database_set(Connection* conn, int id, Car *car) { 
     if (conn->db->size == conn->db->capacity) {
         conn->db->capacity += CHUNK_SIZE;
-        conn->db->rows = realloc(conn->db->rows, conn->db->capacity * sizeof(Address));
+        conn->db->rows = realloc(conn->db->rows, conn->db->capacity * sizeof(Address*));
         for (int i = conn->db->size; i < conn->db->capacity; i++) {
-            conn->db->rows[i] = malloc(sizeof(Address));
+            conn->db->rows[i] = calloc(1, sizeof(Address));
         }
     }
+    debugTable(conn);
+    debug("here");
    
     int i;
     for (i = 0; i < conn->db->capacity; i++) {
@@ -636,13 +638,19 @@ void database_set(Connection* conn, int id, Car *car) {
             break;
         }
     }
+    debug("I is %d", i);
+    debug("here2");
 
     strcpy(conn->db->rows[i]->car_make, car->make);
+    debug("here2.4");
     strcpy(conn->db->rows[i]->car_model, car->model);
+    debug("here3");
     conn->db->rows[i]->car_year = car->year;
     conn->db->rows[i]->car_price = car->price;
     conn->db->rows[i]->id = id;
     conn->db->rows[i]->filter = 1;
+
+    debug("here4");
 
     conn->db->size += 1;
 
@@ -732,7 +740,7 @@ void database_delete(Connection *conn, int id) {
             if (choice("Do you really want to delete this entry?")) {
                 addr->id = 0;
                 conn->db->rows[i] = NULL;
-                conn->db->rows[i] = malloc(sizeof(Address));
+                conn->db->rows[i] = calloc(1, sizeof(Address));
                 conn->db->size--;
                 printf("Successfully deleted\n");
                 return;
