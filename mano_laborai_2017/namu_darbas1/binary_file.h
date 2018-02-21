@@ -3,21 +3,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "database.h"
 
-//// database address ('set' - whether is set (exists) or not)
-//typedef struct {
-    //int id;
-    //int set;
-    //char car_make[10];
-    //char car_model[10];
-    //int car_year;
-    //int car_price;
-//} Address;
-
-//// database
-//typedef struct {
-    //Address rows[MAX_ROWS];
-//} Database;
+#define CHUNK_SIZE 2
 
 // has a pointer to file and a pointer to database
 typedef struct {
@@ -34,6 +22,8 @@ typedef struct {
 // ::return: connection struct
 Connection *database_open(const char* filename);
 
+// description
+void database_create(Connection *conn);
 
 // write current state of database to a file
 //

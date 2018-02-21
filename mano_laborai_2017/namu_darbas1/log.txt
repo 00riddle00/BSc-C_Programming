@@ -1,0 +1,9 @@
+Starting program @Wed Feb 21 14:14:42 2018
+Time spent: 0.000823 seconds
+-----------------------
+Starting program @Wed Feb 21 14:15:39 2018
+Time spent: 0.000334 seconds
+-----------------------
+Starting program @Wed Feb 21 15:29:30 2018
+Time spent: 0.002248 seconds
+-----------------------

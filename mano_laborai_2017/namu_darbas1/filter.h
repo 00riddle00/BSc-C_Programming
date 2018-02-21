@@ -3,26 +3,12 @@
 
 #include <stdio.h>
 #include <string.h>
-
-/*#define MAX_ROWS 100*/
-
-//// database address ('set' - whether is set (exists) or not)
-//typedef struct {
-    //int id;
-    //int set;
-    //char car_make[10];
-    //char car_model[10];
-    //int car_year;
-    //int car_price;
-    //[>Car *car;<]
-//} Address;
-
-//// database
-//typedef struct {
-    //Address rows[MAX_ROWS];
-/*} Database;*/
+#include "database.h"
 
 // functions to filter database in a given manner
+
+// reset filter
+void reset_filter(Database* db);
 
 // filter by car make
 void filter_by_make(Database* db, int type, char* value);
