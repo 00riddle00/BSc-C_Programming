@@ -23,11 +23,9 @@
  | 			      four filtering options: (1) Value is equal (2) Value contains 
  | 				  (3) Value is not equal (4) Value does not contain. After sorting
  | 			      or filtering, the changed database output is displayed to the 
- | 			      screen, however, is not written to the database, hence the order 
- | 				  remains the same before sort or filter action. Each time the 
- | 				  program runs, the log entry is created in ./log.txt file, with
- | 				  the info about the beginning of the program and how much time did
- | 				  it run.
+ | 			      screen. Each time the program runs, the log entry is created in 
+ |                ./log.txt file, with the info about the beginning of the program 
+ |                 and how much time did it run.
  |
  |  Constraints:  
  |                
@@ -38,20 +36,16 @@
  |
  |  Known bugs:   
  |                
- |       TODOS:   (1) Move sorting, filtering, and binary file processing 
- | 				  functions to separate modules. 
- | 				  (2) Implement logging to a file (./log.txt)
- | 				  (3) Add unit tests
+ |       TODOS:   (1) Add unit tests
  |
  | Version
- | updates:       Version 1.4 
+ | updates:       Version 1.5
  |
  +===========================================================================*/
 
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <ctype.h>
 #include <errno.h>
 #include <math.h>
@@ -87,6 +81,12 @@ typedef struct {
     char** params;
 } Input;
 
+// function for debugging
+// print the table including empty spaces
+//
+// ::params: conn - Connection structure
+void debugTable(Connection* conn);
+
 // ::params: input - input structure is modified
 void get_input(Input* input);
 
@@ -104,6 +104,26 @@ void clear_input(Input* input);
 // ::params: car object is modified
 void get_car(Car *car);
 
+// print the heading of the table
+void print_heading();
+
+// print address from database
+//
+// ::params: addr - Address
+void address_print(Address *addr);
+
+// perform action on a database
+// (filtering or sorting)
+//
+// ::params: action - Number, indicating the type of action
+// ::params: db - Database
+void perform_action(int action, Database* db);
+
+// this function gets called with atexit()
+// writes logging info to a log file and 
+// displays goodbye message
+void exiting();
+
 // set Address struct in database
 //
 // ::params: db - Database
@@ -117,8 +137,6 @@ void database_set(Connection* conn, int id, Car *car);
 // ::params: id - entry id (user input)
 void database_get(Connection *conn, int id);
 
-void database_list_filtered(Database* db, int reverse);
-
 // get address from database
 //
 // ::params: db - Database
@@ -126,10 +144,13 @@ void database_list_filtered(Database* db, int reverse);
 // reverse order (used in sorting)
 void database_list(Database* db, int reverse);
 
-// print address from database
+// get entries from database, if they pass the filter
+// (check if address->filter is true)
 //
-// ::params: addr - Address
-void address_print(Address *addr);
+// ::params: db - Database
+// ::params: reverse - whether to print in 
+// reverse order (used in sorting)
+void database_list_filtered(Database* db, int reverse);
 
 // delete address from database
 //
@@ -142,7 +163,6 @@ void database_delete(Connection* conn, int id);
 // ::params: conn - Connection struct
 void database_clear(Connection *conn);
 
-
 clock_t begin;
 clock_t end;
 
@@ -151,134 +171,8 @@ double time_spent;
 
 static FILE* logfile;
 
-void perform_action(int action, Database* db) {
-    int field; 
-    int type;
-    char* value;
-    Database* temp_db;
-
-    switch(action) {
-        case 1:
-            printf("By which field would you like to filter? (enter a number)\n");
-            printf("(1) Make\n");
-            printf("(2) Model\n");
-            printf("(3) Year\n");
-            printf("(4) Price\n");
-
-            field = get_num_interval("(Enter a number) > ", "Such option does not exist", 1, 4);
-
-            printf("How would you like to filter?\n");
-            printf("(1) Entry is equal to the given value\n");
-            printf("(2) Entry contains the given value\n");
-            printf("(3) Entry is not equal to the given value\n");
-            printf("(4) Entry does not contain the given value\n");
-
-            type = get_num_interval("(Enter a number) > ", "Such option does not exist", 1, 4);
-
-            printf("Please enter a value to be filtered by\n");
-            value = malloc(sizeof(char) * MAX_TEXT_LENGTH);
-            value = get_text("(Enter a value) > ", value);
-
-            switch(field) {
-                case 1:
-                    filter_by_make(db, type, value);
-                    break;
-                case 2:
-                    filter_by_model(db, type, value);
-                    break;
-                case 3:
-                    filter_by_year(db, type, value);
-                    break;
-                case 4:
-                    filter_by_price(db, type, value);
-                    break;
-            }
-            database_list_filtered(db, 0);
-            reset_filter(db);
-            break;
-
-        case 2:
-            printf("By which field would you like to sort? (enter a number)\n");
-            printf("(1) Make\n");
-            printf("(2) Model\n");
-            printf("(3) Year\n");
-            printf("(4) Price\n");
-
-            field = get_num_interval("(Enter a number) > ", "Such option does not exist", 1, 4);
-
-            printf("How would you like to sort?\n");
-            printf("(1) Ascending order\n");
-            printf("(2) Descending order\n");
-
-            type = get_num_interval("(Enter a number) > ", "Such option does not exist", 1, 2);
-
-            int reverse = (type == 1) ? 0 : 1;
-
-            switch(field) {
-                case 1:
-                    sort_lex_by_make(db, 0, db->size - 1);
-                    break;
-                case 2:
-                    sort_lex_by_model(db, 0, db->size - 1);
-                    break;
-                case 3:
-                    sort_by_year(db, 0, db->size - 1);
-                    break;
-                case 4:
-                    sort_by_price(db, 0, db->size - 1);
-                    break;
-            }
-            database_list(db, reverse);
-            break;
-    }
-
-}
-
-
-// function for debugging
-void print(Connection* conn) {
-    int i = 0;
-
-    debug("db size: %d", conn->db->size);
-    debug("db capacity: %d", conn->db->capacity);
-
-    printf("__________________________________________________________________________________________\n");
-    printf("| ID |            Make              |            Model             |   Year   |   Price  |\n");
-    printf("|_ __|______________________________|______________________________|__________|__________|\n");
-
-    /*if (conn->db->size == 0) {*/
-        /*printf("No entries.\n");*/
-        /*return;*/
-    /*}*/
-
-
-    /*for (i = 0; i < conn->db->size; i++) {*/
-    for (i = 0; i < conn->db->capacity; i++) {
-        Address *cur = conn->db->rows[i];
-        debug("i = %d", i);
-        if (cur) {
-            address_print(cur);
-        } else {
-            printf("------NULL-------\n");
-        }
-    }
-}
-
-
-
-void exiting() {
-    end = clock();
-
-    clocks = (double)(end - begin);
-    time_spent = clocks / CLOCKS_PER_SEC;
-    fprintf(logfile, "Time spent: %lf seconds\n", time_spent);
-    fputs("-----------------------\n", logfile);
-    printf("Goodbye!\n");
-}
-
 
 int main(int argc, char *argv[]) {
-   /* register the termination function */
 
     if (argc < 2) die ("USAGE: test <dbfile> <action> [action params]");
 
@@ -292,11 +186,10 @@ int main(int argc, char *argv[]) {
     /* Convert to local time format. */
     c_time_string = ctime(&current_time);
 
-
-    /*fputs("Starting program...\n", logfile);*/
     fprintf(logfile, "Starting program @%s", c_time_string);
     begin = clock();
 
+    /* register the termination function */
     atexit(exiting);
 
     char* filename = argv[1];
@@ -318,9 +211,7 @@ int main(int argc, char *argv[]) {
     // id for database entries
     int id;
 
-    
-
-    /*// initialize input variable*/
+    /* initialize input variable*/
     Input* input = (Input*) malloc(sizeof(Input));
     input->params = malloc(MAX_PARAMS * sizeof(char *));
     input->count = 0;
@@ -387,12 +278,10 @@ int main(int argc, char *argv[]) {
                 database_get(conn, id);
                 break;
             case 's':; // An empty statement before a label
-                 debug("0");
                 int no_change = 0;
 
 				for (int i = 0; i < conn->db->size; i++) {
                     Address *cur = conn->db->rows[i];
-                    debug("1");
                     if (cur->id == id) {
                         printf("Such entry already exists:\n");
                         database_get(conn, id);
@@ -407,8 +296,6 @@ int main(int argc, char *argv[]) {
                 }
                 if (no_change)
                     break;
-
-				debug("Here now");
 
                 Car *car = malloc(sizeof(Car));
                 if (car == NULL) die("Memory error");
@@ -433,20 +320,10 @@ int main(int argc, char *argv[]) {
             case 'i':
                 printf("\n%s\n", separator);
                 printf("%s\n\n", info);
-                print(conn);
+                debugTable(conn);
                 break;
             case 'q':
-
-
-                // TODO add cleaning
                 database_close(conn);
-                /*free(info);*/
-                /*free(input->params);*/
-                /*for (int i = 0; i < 2; ++i) {*/
-                    /*free(input->params[i]);*/
-                /*}*/
-                /*free(input);*/
-
                 return 0;
             default:
                 printf("Invalid action, only: g=get, s=set, d=delete, l=list, q=quit, i=info\n");
@@ -454,6 +331,30 @@ int main(int argc, char *argv[]) {
 
     }
 }
+
+
+// function for debugging
+void debugTable(Connection* conn) {
+    int i = 0;
+
+    debug("db size: %d", conn->db->size);
+    debug("db capacity: %d", conn->db->capacity);
+
+    printf("__________________________________________________________________________________________\n");
+    printf("| ID |            Make              |            Model             |   Year   |   Price  |\n");
+    printf("|_ __|______________________________|______________________________|__________|__________|\n");
+
+    for (i = 0; i < conn->db->capacity; i++) {
+        Address *cur = conn->db->rows[i];
+        debug("i = %d", i);
+        if (cur) {
+            address_print(cur);
+        } else {
+            printf("------NULL-------\n");
+        }
+    }
+}
+
 
 void get_input(Input* input) {
 
@@ -613,18 +514,121 @@ void get_car(Car *car) {
     car->price = get_pos_num("Enter price > ", 0);
 
 }
+
+void print_heading() {
+    printf("__________________________________________________________________________________________\n");
+    printf("| ID |            Make              |            Model             |   Year   |   Price  |\n");
+    printf("|_ __|______________________________|______________________________|__________|__________|\n");
+}
+
+void address_print(Address *addr) {
+
+    printf("|%4d|%30s|%30s|%10d|%10d|\n", addr->id, addr->car_make, addr->car_model, addr->car_year, addr->car_price);
+    printf("|____|______________________________|______________________________|__________|__________|\n");
+}
+
+
+void perform_action(int action, Database* db) {
+    int field; 
+    int type;
+    char* value;
+
+    switch(action) {
+        case 1:
+            printf("By which field would you like to filter? (enter a number)\n");
+            printf("(1) Make\n");
+            printf("(2) Model\n");
+            printf("(3) Year\n");
+            printf("(4) Price\n");
+
+            field = get_num_interval("(Enter a number) > ", "Such option does not exist", 1, 4);
+
+            printf("How would you like to filter?\n");
+            printf("(1) Entry is equal to the given value\n");
+            printf("(2) Entry contains the given value\n");
+            printf("(3) Entry is not equal to the given value\n");
+            printf("(4) Entry does not contain the given value\n");
+
+            type = get_num_interval("(Enter a number) > ", "Such option does not exist", 1, 4);
+
+            printf("Please enter a value to be filtered by\n");
+            value = malloc(sizeof(char) * MAX_TEXT_LENGTH);
+            value = get_text("(Enter a value) > ", value);
+
+            switch(field) {
+                case 1:
+                    filter_by_make(db, type, value);
+                    break;
+                case 2:
+                    filter_by_model(db, type, value);
+                    break;
+                case 3:
+                    filter_by_year(db, type, value);
+                    break;
+                case 4:
+                    filter_by_price(db, type, value);
+                    break;
+            }
+            database_list_filtered(db, 0);
+            reset_filter(db);
+            break;
+
+        case 2:
+            printf("By which field would you like to sort? (enter a number)\n");
+            printf("(1) Make\n");
+            printf("(2) Model\n");
+            printf("(3) Year\n");
+            printf("(4) Price\n");
+
+            field = get_num_interval("(Enter a number) > ", "Such option does not exist", 1, 4);
+
+            printf("How would you like to sort?\n");
+            printf("(1) Ascending order\n");
+            printf("(2) Descending order\n");
+
+            type = get_num_interval("(Enter a number) > ", "Such option does not exist", 1, 2);
+
+            int reverse = (type == 1) ? 0 : 1;
+
+            switch(field) {
+                case 1:
+                    sort_lex_by_make(db, 0, db->size - 1);
+                    break;
+                case 2:
+                    sort_lex_by_model(db, 0, db->size - 1);
+                    break;
+                case 3:
+                    sort_by_year(db, 0, db->size - 1);
+                    break;
+                case 4:
+                    sort_by_price(db, 0, db->size - 1);
+                    break;
+            }
+            database_list(db, reverse);
+            break;
+    }
+
+}
+
+void exiting() {
+    end = clock();
+
+    clocks = (double)(end - begin);
+    time_spent = clocks / CLOCKS_PER_SEC;
+    fprintf(logfile, "Time spent: %lf seconds\n", time_spent);
+    fputs("-----------------------\n", logfile);
+    printf("Goodbye!\n");
+}
+
 void database_set(Connection* conn, int id, Car *car) { 
     if (conn->db->size == conn->db->capacity) {
         conn->db->capacity += CHUNK_SIZE;
         conn->db->rows = realloc(conn->db->rows, conn->db->capacity * sizeof(Address));
-        /*debug("realloc");*/
         for (int i = conn->db->size; i < conn->db->capacity; i++) {
             conn->db->rows[i] = malloc(sizeof(Address));
         }
     }
    
-    debug("db capacity: %d", conn->db->capacity);
-
     int i;
     for (i = 0; i < conn->db->capacity; i++) {
         Address *cur = conn->db->rows[i];
@@ -637,21 +641,12 @@ void database_set(Connection* conn, int id, Car *car) {
     strcpy(conn->db->rows[i]->car_model, car->model);
     conn->db->rows[i]->car_year = car->year;
     conn->db->rows[i]->car_price = car->price;
-    /*conn->db->rows[conn->db->size]->set = 1;*/
     conn->db->rows[i]->id = id;
     conn->db->rows[i]->filter = 1;
 
     conn->db->size += 1;
-    /*memcpy(conn->db->rows[conn->db->size], addr, sizeof(Address));*/
-    debug("po memcpy");
 
     printf("Successfully saved, ID = %d\n", id);
-}
-
-void print_heading() {
-    printf("__________________________________________________________________________________________\n");
-    printf("| ID |            Make              |            Model             |   Year   |   Price  |\n");
-    printf("|_ __|______________________________|______________________________|__________|__________|\n");
 }
 
 
@@ -668,36 +663,6 @@ void database_get(Connection *conn, int id) {
     }
     printf("ID is not set\n");
 }
-
-void database_list_filtered(Database* db, int reverse) {
-
-    print_heading();
-
-    if (db->size == 0) {
-        printf("No entries.\n");
-        return;
-    }
-
-    int i = 0;
-
-    if (!reverse) {
-        for (i = 0; i < db->capacity; i++) {
-            Address *cur = db->rows[i];
-            if (db->rows[i] != NULL && cur->filter) {
-                address_print(cur);
-            }
-        }
-    } else {
-        for (i = db->capacity - 1; i >= 0; i--) {
-            Address *cur = db->rows[i];
-            if (db->rows[i] != NULL && cur->filter) {
-                address_print(cur);
-            }
-        }
-    }
-
-}
-
 
 
 void database_list(Database* db, int reverse) {
@@ -729,25 +694,45 @@ void database_list(Database* db, int reverse) {
 
 }
 
-void address_print(Address *addr) {
 
-    printf("|%4d|%30s|%30s|%10d|%10d|\n", addr->id, addr->car_make, addr->car_model, addr->car_year, addr->car_price);
-    printf("|____|______________________________|______________________________|__________|__________|\n");
+
+void database_list_filtered(Database* db, int reverse) {
+
+    print_heading();
+
+    if (db->size == 0) {
+        printf("No entries.\n");
+        return;
+    }
+
+    int i = 0;
+
+    if (!reverse) {
+        for (i = 0; i < db->capacity; i++) {
+            Address *cur = db->rows[i];
+            if (db->rows[i] != NULL && cur->filter) {
+                address_print(cur);
+            }
+        }
+    } else {
+        for (i = db->capacity - 1; i >= 0; i--) {
+            Address *cur = db->rows[i];
+            if (db->rows[i] != NULL && cur->filter) {
+                address_print(cur);
+            }
+        }
+    }
+
 }
-
 
 void database_delete(Connection *conn, int id) {
     for (int i = 0; i < conn->db->capacity; i++) {
         Address *addr = conn->db->rows[i];
         if (addr->id == id) {
-            debug("carMake: %s", addr->car_make);
             if (choice("Do you really want to delete this entry?")) {
                 addr->id = 0;
-                addr = NULL;
-                debug("before");
                 conn->db->rows[i] = NULL;
                 conn->db->rows[i] = malloc(sizeof(Address));
-                debug("after");
                 conn->db->size--;
                 printf("Successfully deleted\n");
                 return;
@@ -759,26 +744,25 @@ void database_delete(Connection *conn, int id) {
 
 
 void database_clear(Connection *conn) {
-    int i = 0;
-    int count = 0;
+
+    if (!conn->db->size) {
+        printf("Database has no entries. Nothing to clear.\n");
+        return;
+    }
 
     if (choice("Do you really want to clear the entire database?")) {
 
-        for (i = 0; i < conn->db->size; i++) {
+        for (int i = 0; i < conn->db->capacity; i++) {
             Address *cur = conn->db->rows[i];
             if (cur) {
                 cur = NULL;
+                conn->db->rows = NULL;
                 /*free(cur->car);*/
-                count += 1;
             }
         }
         database_write(conn);
+        printf("Database has been successfully cleared.\n");
 
-        if (count) {
-            printf("Database has been successfully cleared.\n");
-        } else {
-            printf("Database has no entries. Nothing to clear.\n");
-        }
     }
 }
 

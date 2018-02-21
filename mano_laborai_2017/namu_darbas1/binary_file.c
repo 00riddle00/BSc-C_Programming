@@ -53,7 +53,6 @@ void database_create(Connection *conn) {
 
     conn->db->capacity = CHUNK_SIZE;
     conn->db->size = 0;
-    // TODO rm this line if not needed
     conn->db->rows = malloc(conn->db->capacity * sizeof(Address));
 
     for (int i = 0; i < conn->db->capacity; i++) {
@@ -67,7 +66,6 @@ void database_write(Connection *conn) {
 	int rc = fwrite(conn->db, sizeof(Database), 1, conn->file);
 	if (rc != 1) die("Failed to write database");
 
-    /*for (int i = 0; i < conn->db->size; i++) {*/
     for (int i = 0; i < conn->db->capacity; i++) {
         if (conn->db->rows[i] != NULL)
             rc = fwrite(conn->db->rows[i], sizeof(Address), 1, conn->file);

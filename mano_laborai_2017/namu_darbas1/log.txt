@@ -7,3 +7,9 @@ Time spent: 0.000334 seconds
 Starting program @Wed Feb 21 15:29:30 2018
 Time spent: 0.002248 seconds
 -----------------------
+Starting program @Wed Feb 21 16:37:00 2018
+Time spent: 0.020573 seconds
+-----------------------
+Starting program @Wed Feb 21 16:37:26 2018
+Time spent: 0.000718 seconds
+-----------------------

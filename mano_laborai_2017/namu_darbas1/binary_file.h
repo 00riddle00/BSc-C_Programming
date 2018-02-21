@@ -7,6 +7,7 @@
 
 #define CHUNK_SIZE 2
 
+// Connection structure
 // has a pointer to file and a pointer to database
 typedef struct {
     FILE *file;
@@ -22,7 +23,11 @@ typedef struct {
 // ::return: connection struct
 Connection *database_open(const char* filename);
 
-// description
+// create database
+// allocate memory for address rows, 
+// set size and capacity of the database
+//
+// ::params: conn - Connection struct
 void database_create(Connection *conn);
 
 // write current state of database to a file
