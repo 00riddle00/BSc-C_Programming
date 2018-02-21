@@ -55,6 +55,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <math.h>
+#include <time.h>
 
 #include "dbg.h"
 /*#include "binary_file.h"*/
@@ -68,6 +69,7 @@
 #define LATEST_YEAR 2018
 #define EARLIEST_YEAR 1920
 #define CHUNK_SIZE 2
+#define LOGFILE "log.txt"
 
 // car (make, model, year of making, car price)
 typedef struct {
@@ -197,6 +199,15 @@ void database_clear(Connection *conn);
 // ::params: conn - Connection struct
 void database_close(Connection *conn);
 
+
+
+clock_t begin;
+clock_t end;
+
+double clocks;
+double time_spent;
+
+static FILE* logfile;
 
 void reset_filter(Database* db) {
 
@@ -686,10 +697,38 @@ void print(Connection* conn) {
 
 
 
+void exiting() {
+    end = clock();
+
+    clocks = (double)(end - begin);
+    time_spent = clocks / CLOCKS_PER_SEC;
+    fprintf(logfile, "Time spent: %lf seconds\n", time_spent);
+    fputs("-----------------------\n", logfile);
+    printf("Goodbye!\n");
+}
 
 
 int main(int argc, char *argv[]) {
+   /* register the termination function */
+
     if (argc < 2) die ("USAGE: test <dbfile> <action> [action params]");
+
+    logfile = fopen(LOGFILE, "ab+");
+
+    time_t current_time;
+    char* c_time_string;
+
+    current_time = time(NULL);
+
+    /* Convert to local time format. */
+    c_time_string = ctime(&current_time);
+
+
+    /*fputs("Starting program...\n", logfile);*/
+    fprintf(logfile, "Starting program @%s", c_time_string);
+    begin = clock();
+
+    atexit(exiting);
 
     char* filename = argv[1];
     Connection* conn = database_open(filename);
@@ -828,6 +867,8 @@ int main(int argc, char *argv[]) {
                 print(conn);
                 break;
             case 'q':
+
+
                 // TODO add cleaning
                 database_close(conn);
                 /*free(info);*/
@@ -837,7 +878,6 @@ int main(int argc, char *argv[]) {
                 /*}*/
                 /*free(input);*/
 
-                printf("Goodbye!\n");
                 return 0;
             default:
                 printf("Invalid action, only: g=get, s=set, d=delete, l=list, q=quit, i=info\n");
