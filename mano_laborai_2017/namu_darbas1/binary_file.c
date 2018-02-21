@@ -23,10 +23,10 @@ Connection *database_open(const char* filename) {
 		// load database from file
 		int rc = fread(conn->db, sizeof(Database), 1, conn->file);
 
-        conn->db->rows = malloc(conn->db->capacity * sizeof(Address));
+        conn->db->rows = malloc(conn->db->capacity * sizeof(Address*));
 
         for (int i = 0; i < conn->db->capacity; i++) {
-            conn->db->rows[i] = malloc(sizeof(Address));
+            conn->db->rows[i] = calloc(1, sizeof(Address));
         }
 
         for (int i = 0; i < conn->db->capacity; i++) {
@@ -53,10 +53,10 @@ void database_create(Connection *conn) {
 
     conn->db->capacity = CHUNK_SIZE;
     conn->db->size = 0;
-    conn->db->rows = malloc(conn->db->capacity * sizeof(Address));
+    conn->db->rows = malloc(conn->db->capacity * sizeof(Address*));
 
     for (int i = 0; i < conn->db->capacity; i++) {
-        conn->db->rows[i] = malloc(sizeof(Address));
+        conn->db->rows[i] = calloc(1, sizeof(Address));
     }
 }
 
@@ -67,8 +67,7 @@ void database_write(Connection *conn) {
 	if (rc != 1) die("Failed to write database");
 
     for (int i = 0; i < conn->db->capacity; i++) {
-        if (conn->db->rows[i] != NULL)
-            rc = fwrite(conn->db->rows[i], sizeof(Address), 1, conn->file);
+        rc = fwrite(conn->db->rows[i], sizeof(Address), 1, conn->file);
     }
 
 	rc = fflush(conn->file);

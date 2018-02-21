@@ -281,8 +281,7 @@ int main(int argc, char *argv[]) {
                 int no_change = 0;
 
 				for (int i = 0; i < conn->db->capacity; i++) {
-                    Address *cur = conn->db->rows[i];
-                    if (cur->id == id) {
+                    if (conn->db->rows[i]->id == id) {
                         printf("Such entry already exists:\n");
                         database_get(conn, id);
                         if (choice("Would you like to change it?")) {
@@ -345,13 +344,7 @@ void debugTable(Connection* conn) {
     printf("|_ __|______________________________|______________________________|__________|__________|\n");
 
     for (i = 0; i < conn->db->capacity; i++) {
-        Address *cur = conn->db->rows[i];
-        debug("i = %d", i);
-        if (cur) {
-            address_print(cur);
-        } else {
-            printf("------NULL-------\n");
-        }
+        address_print(conn->db->rows[i]);
     }
 }
 
@@ -628,29 +621,20 @@ void database_set(Connection* conn, int id, Car *car) {
             conn->db->rows[i] = calloc(1, sizeof(Address));
         }
     }
-    debugTable(conn);
-    debug("here");
    
     int i;
     for (i = 0; i < conn->db->capacity; i++) {
-        Address *cur = conn->db->rows[i];
-        if (conn->db->rows[i] == NULL || cur->id == 0) {
+        if (conn->db->rows[i]->id == 0) {
             break;
         }
     }
-    debug("I is %d", i);
-    debug("here2");
 
     strcpy(conn->db->rows[i]->car_make, car->make);
-    debug("here2.4");
     strcpy(conn->db->rows[i]->car_model, car->model);
-    debug("here3");
     conn->db->rows[i]->car_year = car->year;
     conn->db->rows[i]->car_price = car->price;
     conn->db->rows[i]->id = id;
     conn->db->rows[i]->filter = 1;
-
-    debug("here4");
 
     conn->db->size += 1;
 
@@ -686,16 +670,14 @@ void database_list(Database* db, int reverse) {
 
     if (!reverse) {
         for (i = 0; i < db->capacity; i++) {
-            Address *cur = db->rows[i];
-            if (db->rows[i] != NULL && cur->id) {
-                address_print(cur);
+            if (db->rows[i]->id) {
+                address_print(db->rows[i]);
             }
         }
     } else {
         for (i = db->capacity - 1; i >= 0; i--) {
-            Address *cur = db->rows[i];
-            if (db->rows[i] != NULL && cur->id) {
-                address_print(cur);
+            if (db->rows[i]->id) {
+                address_print(db->rows[i]);
             }
         }
     }
@@ -717,16 +699,14 @@ void database_list_filtered(Database* db, int reverse) {
 
     if (!reverse) {
         for (i = 0; i < db->capacity; i++) {
-            Address *cur = db->rows[i];
-            if (db->rows[i] != NULL && cur->filter) {
-                address_print(cur);
+            if (db->rows[i]->filter) {
+                address_print(db->rows[i]);
             }
         }
     } else {
         for (i = db->capacity - 1; i >= 0; i--) {
-            Address *cur = db->rows[i];
-            if (db->rows[i] != NULL && cur->filter) {
-                address_print(cur);
+            if (db->rows[i]->filter) {
+                address_print(db->rows[i]);
             }
         }
     }
@@ -739,7 +719,6 @@ void database_delete(Connection *conn, int id) {
         if (addr->id == id) {
             if (choice("Do you really want to delete this entry?")) {
                 addr->id = 0;
-                conn->db->rows[i] = NULL;
                 conn->db->rows[i] = calloc(1, sizeof(Address));
                 conn->db->size--;
                 printf("Successfully deleted\n");
@@ -760,14 +739,12 @@ void database_clear(Connection *conn) {
 
     if (choice("Do you really want to clear the entire database?")) {
 
+        conn->db->size = 0;
+
         for (int i = 0; i < conn->db->capacity; i++) {
-            Address *cur = conn->db->rows[i];
-            if (cur) {
-                cur = NULL;
-                conn->db->rows = NULL;
-                /*free(cur->car);*/
-            }
+            free(conn->db->rows[i]);
         }
+        database_create(conn);
         database_write(conn);
         printf("Database has been successfully cleared.\n");
 
