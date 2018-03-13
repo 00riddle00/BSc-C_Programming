@@ -67,26 +67,32 @@
  j) Sąlajos metodas (angl. merge sort)
  */
 
-// TODO add these sorts:
+// TODO add these sorts ((+) means already added)
 
-/*(+) bubble_sort*/
-/*(+++++) bubble_sort optimizations (5)*/
-/*(+++) quicksort (pivot first, median/random median)*/
-/*(+) insertion sort*/
-/*(+) selection sort*/
-/*(+) merge sort*/
-/*(+) heap sort*/
-/*(-)tree sort*/
-/*(-)smooth sort*/
-/*(-)comb sort*/
+/*(+) Bubble_sort*/
+/*(+++++) Bubble_sort optimizations (14)*/
+/*(+++) Quicksort (3) (pivot first, median/random median)*/
+/*(+) Insertion sort*/
+/*(+) Selection sort*/
+/*(+) Merge sort*/
+/*(+) Heap sort*/
+
+/*(+)Gnome sort*/
+/*(+)Comb sort*/
 /*(-)Shell sort*/
+
+/* Implement hybrid algorithm O(n^2), 
+/ * but better than Shaker/Gnome/Comb/Shell sort*/
+/* can be optimized Shell sort*/
+
+/*(-)Tree sort*/
+/*(-)Smooth sort*/
 /*(-)Intro sort*/
 /*(-)Tim sort*/
 /*(-)Bucket Sort*/
 /*(-)Radix Sort */
 /*(-)Counting Sort*/
 /*(-)Cubesort*/
-
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -162,10 +168,22 @@ void print_algo(Algorithm* Algo);
 void calculate_average(Algorithm* Algo);
 Algorithm** rank_algorithms(Algorithm** target, int first, int last);
 
+/* Newly added algoritms (Exercise 6) */
+
+/* Gnome Sort */
+int* GnomeSort(int* target, int size);
+/* Comb sort*/
+int newgap(int gap);
+int* combsort(int* a, int aSize);
+/* Shell sort */
+int* shellSort(int* intArray, int size);
+
+
 MemoryStats memoryStats;
 
 int array_count;
 int algo_count;
+
 
 int main(int argc, char* argv[])
 {
@@ -177,7 +195,7 @@ int main(int argc, char* argv[])
     Res->arch = "Arch Linux x86_64";
     Res->compiler = "gcc";
     
-    algo_count = 21;
+    algo_count = 24;
 
     // creating algorithm structures
     Algorithm* Algo1 = malloc(sizeof(Algorithm));
@@ -201,7 +219,7 @@ int main(int argc, char* argv[])
     Algo5->complexity = "O (n^2)";
 
     Algorithm* Algo6 = malloc(sizeof(Algorithm));
-    Algo6->type = "bubble_sort_f";
+    Algo6->type = "bubble_sort_f (Shaker sort)";
     Algo6->complexity = "O (n^2)";
 
     Algorithm* Algo7 = malloc(sizeof(Algorithm));
@@ -264,6 +282,17 @@ int main(int argc, char* argv[])
     Algo21->type = "heap sort";
     Algo21->complexity = "O (n log n)";
 
+    Algorithm* Algo22 = malloc(sizeof(Algorithm));
+    Algo22->type = "gnome sort";
+    Algo22->complexity = "O(n^2)";
+
+    Algorithm* Algo23 = malloc(sizeof(Algorithm));
+    Algo23->type = "comb sort";
+    Algo23->complexity = "O(n^2)";
+
+    Algorithm* Algo24 = malloc(sizeof(Algorithm));
+    Algo24->type = "shell sort";
+    Algo24->complexity = "O(n^2) (worst known gap sequence), O(n*log^2(n)) (best known gap sequence)";
 
     Res->algorithms[0] = Algo1;
     Res->algorithms[1] = Algo2;
@@ -286,6 +315,9 @@ int main(int argc, char* argv[])
     Res->algorithms[18] = Algo19;
     Res->algorithms[19] = Algo20;
     Res->algorithms[20] = Algo21;
+    Res->algorithms[21] = Algo22;
+    Res->algorithms[22] = Algo23;
+    Res->algorithms[23] = Algo24;
 
     memoryStats.memJournal = malloc(10 * sizeof(int));
 
@@ -348,6 +380,9 @@ int main(int argc, char* argv[])
         test_sort(data, size, &selection_sort, Algo19, i + 1);
         test_mergesort(data, size, &TopDownMergeSort, Algo20, i + 1);
         test_sort(data, size, &heapSort, Algo21, i + 1);
+        test_sort(data, size, &GnomeSort, Algo22, i + 1);
+        test_sort(data, size, &combsort, Algo23, i + 1);
+        test_sort(data, size, &shellSort, Algo24, i + 1);
 
         free(data);
         debug("%d iter", i);
@@ -374,11 +409,13 @@ int main(int argc, char* argv[])
     calculate_average(Algo19);
     calculate_average(Algo20);
     calculate_average(Algo21);
+    calculate_average(Algo22);
+    calculate_average(Algo23);
+    calculate_average(Algo24);
 
     for (int i = 0; i < algo_count; i++) {
         print_algo(Res->algorithms[i]);
     }
-
 
     Algorithm** target = malloc(algo_count * sizeof(Algorithm));
 
@@ -403,6 +440,9 @@ int main(int argc, char* argv[])
     target[18] = Algo19;
     target[19] = Algo20;
     target[20] = Algo21;
+    target[21] = Algo22;
+    target[22] = Algo23;
+    target[23] = Algo24;
 
     target = rank_algorithms(target, 0, algo_count-1);
 
@@ -532,6 +572,22 @@ int main(int argc, char* argv[])
         free(Algo21->iterations[i]);
     }
     free(Algo21);
+
+    for (int i = 0; i < array_count; i++) {
+        free(Algo22->iterations[i]);
+    }
+    free(Algo22);
+
+    for (int i = 0; i < array_count; i++) {
+        free(Algo23->iterations[i]);
+    }
+    free(Algo23);
+
+    for (int i = 0; i < array_count; i++) {
+        free(Algo24->iterations[i]);
+    }
+    free(Algo24);
+
 
     free(target);
     free(memoryStats.memJournal);
@@ -801,3 +857,131 @@ Algorithm** rank_algorithms(Algorithm** target, int first, int last)
     return target;
 }
 
+
+
+int* GnomeSort(int* target, int size) {
+	for (int i = 1; i < size; ) {
+		if (target[i - 1] <= target[i]) {
+
+            count_ncomp++;
+
+			++i;
+        } else {
+			int tmp = target[i];
+			target[i] = target[i - 1];
+			target[i - 1] = tmp;
+
+            count_assign += 3;
+
+			--i;
+			if (i == 0)
+				i = 1;
+		}
+	}
+    return target;
+}
+
+
+/*
+
+ * C Program to Perform Comb Sort on Array of Integers
+
+ */
+
+
+/*Function to find the new gap between the elements*/
+
+int newgap(int gap) {
+    gap = (gap * 10) / 13;
+
+    if (gap == 9 || gap == 10) {
+        gap = 11;
+    }
+
+    if (gap < 1) {
+        gap = 1;
+    }
+
+    return gap;
+}
+
+/*Function to implement the combsort*/
+
+int* combsort(int* a, int aSize) {
+
+    int gap = aSize;
+    int temp, i;
+
+    for (;;) {
+
+        gap = newgap(gap);
+        int swapped = 0;
+
+        for (i = 0; i < aSize - gap; i++) {
+            int j = i + gap;
+
+            if (a[i] > a[j]) {
+
+                count_ncomp++;
+
+                temp = a[i];
+                a[i] = a[j];
+                a[j] = temp;
+
+                count_assign += 3;
+
+                swapped  =  1;
+            }
+
+        }
+
+        if (gap  ==  1 && !swapped) {
+            break;
+        }
+
+    }
+
+    return a;
+}
+
+
+
+int* shellSort(int* intArray, int size) {
+   int inner, outer;
+   int valueToInsert;
+   int interval = 1;
+   int elements = size;
+   int i = 0;
+
+   while(interval <= elements/3) {
+      interval = interval*3 +1;
+   }
+
+   while(interval > 0) {
+      for(outer = interval; outer < elements; outer++) {
+         valueToInsert = intArray[outer];
+         inner = outer;
+
+         count_assign++;
+
+         while(inner > interval -1 && intArray[inner - interval] >= valueToInsert) {
+
+            count_ncomp += 2;
+
+            intArray[inner] = intArray[inner - interval];
+            inner -=interval;
+
+            count_assign++;
+         }
+
+         intArray[inner] = valueToInsert;
+
+         count_assign++;
+      }
+
+      interval = (interval -1) /3;
+      i++;
+   }
+
+   return intArray;
+}
